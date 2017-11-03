@@ -216,3 +216,47 @@ TEST_CASE("remove tokens inside string") {
 #endif
 
 }
+
+TEST_CASE("Parse json with levels") {
+
+#ifdef TFTJ_ENVIRONMENT64
+	std::string input = R"({a:{b:{}}, c:{} })";
+	word_t masklvl0    = 0b0010000000001000000000000000000000000000000000000000000000000000;
+	word_t masklvl1    = 0b0010010000001000000000000000000000000000000000000000000000000000;
+
+	LinearAllocator alloc(1000);
+	int n = (input.size() + word_bits - 1) / word_bits;
+	Character_Bitmap bm(alloc, n, 3, 1, input);
+	create_bitmap(bm, input);
+	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
+	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
+	remove_string_items(n, bm.bm_colon, bm.bm_string);
+	remove_string_items(n, bm.bm_lbrace, bm.bm_string);
+	remove_string_items(n, bm.bm_rbrace, bm.bm_string);
+	build_colon_level_bm(n, 3, alloc, bm);
+
+	REQUIRE(bm.bm_colons[0] == reverseBits(masklvl0));
+	REQUIRE(bm.bm_colons[1] == reverseBits(masklvl1));
+	REQUIRE(bm.bm_colons[2] == reverseBits(masklvl1));
+#else
+	std::string input = R"({a:{b:{}}, c:{} })";
+	word_t masklvl0    = 0b00100000000010000000000000000000;
+	word_t masklvl1    = 0b00100100000000000000000000000000;
+
+	LinearAllocator alloc(1000);
+	int n = (input.size() + word_bits - 1) / word_bits;
+	Character_Bitmap bm(alloc, n, 3, 1, input);
+	create_bitmap(bm, input);
+	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
+	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
+	remove_string_items(n, bm.bm_colon, bm.bm_string);
+	remove_string_items(n, bm.bm_lbrace, bm.bm_string);
+	remove_string_items(n, bm.bm_rbrace, bm.bm_string);
+	build_colon_level_bm(n, 3, alloc, bm);
+
+	REQUIRE(bm.bm_colons[0] == reverseBits(masklvl0));
+	REQUIRE(bm.bm_colons[1] == reverseBits(masklvl1));
+	REQUIRE(bm.bm_colons[2] == reverseBits(masklvl1));
+#endif
+
+}
