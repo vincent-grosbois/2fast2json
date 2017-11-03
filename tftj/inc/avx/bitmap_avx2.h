@@ -1,8 +1,8 @@
 #ifndef __TFTJ_BITMAP_AVX2__
 #define __TFTJ_BITMAP_AVX2__
 
-#include "config.h" 
-#include "indexing.h"
+#include "../config.h" 
+#include "../indexing.h"
 
 #include <immintrin.h>
 

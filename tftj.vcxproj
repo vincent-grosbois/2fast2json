@@ -110,19 +110,20 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="basic_parsing.h" />
-    <ClInclude Include="bitmap.h" />
-    <ClInclude Include="bitmap_avx2.h" />
-    <ClInclude Include="bits.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="debug.h" />
-    <ClInclude Include="indexing.h" />
-    <ClInclude Include="linear_allocator.h" />
-    <ClInclude Include="output_reader.h" />
-    <ClInclude Include="query.h" />
+    <ClCompile Include="tftj\tftj.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="tftj.cpp" />
+    <ClInclude Include="tftj\inc\avx\bitmap_avx2.h" />
+    <ClInclude Include="tftj\inc\basic_parsing.h" />
+    <ClInclude Include="tftj\inc\bitmap.h" />
+    <ClInclude Include="tftj\inc\bits.h" />
+    <ClInclude Include="tftj\inc\config.h" />
+    <ClInclude Include="tftj\inc\debug.h" />
+    <ClInclude Include="tftj\inc\indexing.h" />
+    <ClInclude Include="tftj\inc\linear_allocator.h" />
+    <ClInclude Include="tftj\inc\output_reader.h" />
+    <ClInclude Include="tftj\inc\query.h" />
+    <ClInclude Include="tftj\inc\targetver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

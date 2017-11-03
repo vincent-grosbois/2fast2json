@@ -1,12 +1,12 @@
 #include <string.h>
 #include <string>
-#include "indexing.h"
+#include "inc/indexing.h"
 #include "query.h"
 #include <fstream>
-#include "debug.h"
-#include "bitmap.h"
-#include "bitmap_avx2.h"
-#include "basic_parsing.h"
+#include "inc/debug.h"
+#include "inc/bitmap.h"
+#include "inc/avx/bitmap_avx2.h"
+#include "inc/basic_parsing.h"
 
 namespace tftj
 {
