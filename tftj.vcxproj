@@ -21,8 +21,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E79805EF-3C0D-46E7-A070-A1CAAFA5BA14}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>mison</RootNamespace>
+    <RootNamespace>tftj</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>tftj</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -119,11 +120,9 @@
     <ClInclude Include="linear_allocator.h" />
     <ClInclude Include="output_reader.h" />
     <ClInclude Include="query.h" />
-    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mison.cpp" />
-    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="tftj.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

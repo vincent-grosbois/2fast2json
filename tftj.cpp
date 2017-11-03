@@ -1,5 +1,4 @@
 #include <string.h>
-#include "stdafx.h"
 #include <string>
 #include "indexing.h"
 #include "query.h"
@@ -73,7 +72,7 @@ namespace tftj
 
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char *argv[])
 {
 	std::string file = "D:\\dev\\mison\\companies2.json";
 
