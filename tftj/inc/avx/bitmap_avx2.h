@@ -24,7 +24,8 @@ namespace tftj
 	}
 
 #ifdef TFTJ_ENVIRONMENT64
-	void create_bitmap_avx2_64bits(Character_Bitmap& bitmap, const std::string& s)
+	template<bool useArray>
+	void create_bitmap_avx2_64bits_base(Character_Bitmap& bitmap, const std::string& s)
 	{
 		const int n = s.size();
 		const int num_full_words = n / 64;
@@ -35,6 +36,11 @@ namespace tftj
 		static const __m256i mask_colon = make_256bits_mask(':');
 		static const __m256i mask_leftbraces = make_256bits_mask('{');
 		static const __m256i mask_rightbraces = make_256bits_mask('}');
+
+		//used for array only
+		static const __m256i mask_comma = make_256bits_mask(',');
+		static const __m256i mask_leftbrackets = make_256bits_mask('[');
+		static const __m256i mask_rightbrackets = make_256bits_mask(']');
 
 		char* data = const_cast<char*>(s.data());
 
@@ -68,6 +74,25 @@ namespace tftj
 				unsigned int bitmask_rightbraces1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbraces, val1));
 				unsigned int bitmask_rightbraces2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbraces, val2));
 				bitmap.bm_rbrace[i] = (word_t(bitmask_rightbraces2) << 32) | word_t(bitmask_rightbraces1);
+			}
+
+			if (useArray)
+			{
+				{
+					unsigned int bitmask_comma1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val1));
+					unsigned int bitmask_comma2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val2));
+					bitmap.bm_comma[i] = (word_t(bitmask_comma2) << 32) | word_t(bitmask_comma1);
+				}
+				{
+					unsigned int bitmask_leftbrackets1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val1));
+					unsigned int bitmask_leftbrackets2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val2));
+					bitmap.bm_lbracket[i] = (word_t(bitmask_leftbrackets2) << 32) | word_t(bitmask_leftbrackets1);
+				}
+				{
+					unsigned int bitmask_rightbrackets1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val1));
+					unsigned int bitmask_rightbrackets2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val2));
+					bitmap.bm_rbracket[i] = (word_t(bitmask_rightbrackets2) << 32) | word_t(bitmask_rightbrackets1);
+				}
 			}
 
 			data += 64;
@@ -104,6 +129,25 @@ namespace tftj
 				unsigned int bitmask_rightbraces2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbraces, val2));
 				bitmap.bm_rbrace[num_full_words] = (word_t(bitmask_rightbraces2) << 32) | word_t(bitmask_rightbraces1);
 			}
+
+			if (useArray)
+			{
+				{
+					unsigned int bitmask_comma1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val1));
+					unsigned int bitmask_comma2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val2));
+					bitmap.bm_comma[num_full_words] = (word_t(bitmask_comma2) << 32) | word_t(bitmask_comma1);
+				}
+				{
+					unsigned int bitmask_leftbrackets1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val1));
+					unsigned int bitmask_leftbrackets2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val2));
+					bitmap.bm_lbracket[num_full_words] = (word_t(bitmask_leftbrackets2) << 32) | word_t(bitmask_leftbrackets1);
+				}
+				{
+					unsigned int bitmask_rightbrackets1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val1));
+					unsigned int bitmask_rightbrackets2 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val2));
+					bitmap.bm_rbracket[num_full_words] = (word_t(bitmask_rightbrackets2) << 32) | word_t(bitmask_rightbrackets1);
+				}
+			}
 		}
 		if (remainder == 32)
 		{
@@ -129,6 +173,21 @@ namespace tftj
 				unsigned int bitmask_rightbraces = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbraces, val));
 				bitmap.bm_rbrace[num_full_words] = word_t(bitmask_rightbraces);
 			}
+			if (useArray)
+			{
+				{
+					unsigned int bitmask_comma = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val));
+					bitmap.bm_comma[num_full_words] = word_t(bitmask_comma);
+				}
+				{
+					unsigned int bitmask_leftbrackets = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val));;
+					bitmap.bm_lbracket[num_full_words] = word_t(bitmask_leftbrackets);
+				}
+				{
+					unsigned int bitmask_rightbrackets = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val));
+					bitmap.bm_rbracket[num_full_words] = word_t(bitmask_rightbrackets);
+				}
+			}
 		}
 		else if (remainder > 0) //so remainder is < 32 and > 0
 		{
@@ -153,6 +212,33 @@ namespace tftj
 				unsigned int bitmask_rightbraces = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbraces, val));
 				bitmap.bm_rbrace[num_full_words] = word_t(bitmask_rightbraces);
 			}
+			if (useArray)
+			{
+				{
+					unsigned int bitmask_comma = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_comma, val));
+					bitmap.bm_comma[num_full_words] = word_t(bitmask_comma);
+				}
+				{
+					unsigned int bitmask_leftbrackets = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_leftbrackets, val));;
+					bitmap.bm_lbracket[num_full_words] = word_t(bitmask_leftbrackets);
+				}
+				{
+					unsigned int bitmask_rightbrackets = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_rightbrackets, val));
+					bitmap.bm_rbracket[num_full_words] = word_t(bitmask_rightbrackets);
+				}
+			}
+		}
+	}
+
+	void create_bitmap_avx2_64bits(Character_Bitmap& bitmap, const std::string& s)
+	{
+		if (bitmap.max_array_depth > 0)
+		{
+			create_bitmap_avx2_64bits_base<true>(bitmap, s);
+		}
+		else
+		{
+			create_bitmap_avx2_64bits_base<false>(bitmap, s);
 		}
 	}
 #endif
@@ -172,6 +258,7 @@ namespace tftj
 		static const __m256i mask_leftbraces = make_256bits_mask('{');
 		static const __m256i mask_rightbraces = make_256bits_mask('}');
 
+		//used for array only
 		static const __m256i mask_comma = make_256bits_mask(',');
 		static const __m256i mask_leftbrackets = make_256bits_mask('[');
 		static const __m256i mask_rightbrackets = make_256bits_mask(']');
