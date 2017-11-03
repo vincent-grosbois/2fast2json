@@ -25,20 +25,13 @@ namespace tftj
 	const int word_bits = 64;
 #define TFTJ_POPCNT(x) __popcnt64(x)
 #define TFTJ_LZCNT(x) __lzcnt64(x)
-#else
+#endif
+#ifdef TFTJ_ENVIRONMENT32
 	typedef ::std::uint32_t word_t;
 	const int word_bits = 32;
 #define TFTJ_POPCNT(x) __popcnt(x)
 #define TFTJ_LZCNT(x) __lzcnt(x)
 #endif
-
-
-	enum error_codes
-	{
-		NO_ERROR = 0,
-		BAD_QUERY = 1,
-		BAD_JSON = 2,
-	};
 
 	struct TFTJException
 	{
