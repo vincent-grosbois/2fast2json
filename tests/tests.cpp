@@ -3,6 +3,7 @@
 
 #include "../tftj/inc/config.h"
 #include "../tftj/inc/bitmap.h"
+#include "../tftj/inc/avx/bitmap_avx2.h"
 #include "../tftj/inc/indexing.h"
 #include "../tftj/inc/linear_allocator.h"
 
@@ -66,6 +67,47 @@ TEST_CASE("Character bitmap should work") {
 	REQUIRE(bm.bm_rbrace[0] == 0x0000000800000000);
 #endif
 }
+
+TEST_CASE("AVX2 character bitmap should work") {
+
+	std::string input = R"(TOTO{OTO:OTOdgn\\jfnjksrdr","dlkk00})";
+	int n = (input.size() + word_bits - 1) / word_bits;
+	LinearAllocator alloc(1000);
+	Character_Bitmap bm(alloc, n, 1, 1, input);
+	create_bitmap_avx2(bm, input);
+
+#ifdef TFTJ_ENVIRONMENT32
+	REQUIRE(bm.n == 2);
+
+	REQUIRE(bm.bm_backslash[0] == 0x00018000);
+	REQUIRE(bm.bm_backslash[1] == 0x00000000);
+
+	REQUIRE(bm.bm_colon[0] == 0x00000100);
+	REQUIRE(bm.bm_colon[1] == 0x00000000);
+
+	REQUIRE(bm.bm_lbrace[0] == 0x00000010);
+	REQUIRE(bm.bm_lbrace[1] == 0x00000000);
+
+	REQUIRE(bm.bm_quote[0] == 0x14000000);
+	REQUIRE(bm.bm_quote[1] == 0x00000000);
+
+	REQUIRE(bm.bm_rbrace[0] == 0x00000000);
+	REQUIRE(bm.bm_rbrace[1] == 0x00000008);
+#else
+	REQUIRE(bm.n == 1);
+
+	REQUIRE(bm.bm_backslash[0] == 0x0000000000018000);
+
+	REQUIRE(bm.bm_colon[0] == 0x0000000000000100);
+
+	REQUIRE(bm.bm_lbrace[0] == 0x0000000000000010);
+
+	REQUIRE(bm.bm_quote[0] == 0x0000000014000000);
+
+	REQUIRE(bm.bm_rbrace[0] == 0x0000000800000000);
+#endif
+}
+
 
 TEST_CASE("backslash quotes should be escaped") {
 

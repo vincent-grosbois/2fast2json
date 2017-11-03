@@ -102,7 +102,7 @@ namespace tftj
 		{
 			//load unaligned
 			__m256i val1 = _mm256_loadu_si256(reinterpret_cast<__m256i*>(data));
-			__m256i val2 = load_partial_avx2(data + 32, remainder);
+			__m256i val2 = load_partial_avx2(data + 32, remainder-32);
 
 			{
 				unsigned int bitmask_backslash1 = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mask_backslash, val1));
@@ -149,7 +149,7 @@ namespace tftj
 				}
 			}
 		}
-		if (remainder == 32)
+		else if (remainder == 32)
 		{
 			//load unaligned
 			__m256i val = _mm256_loadu_si256(reinterpret_cast<__m256i*>(data));
