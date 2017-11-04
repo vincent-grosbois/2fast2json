@@ -15,12 +15,12 @@ namespace tftj
 		memset(bitmap.bm_colon, 0, sizeof(word_t)*bitmap.n);
 		memset(bitmap.bm_lbrace, 0, sizeof(word_t)*bitmap.n);
 		memset(bitmap.bm_rbrace, 0, sizeof(word_t)*bitmap.n);
+		memset(bitmap.bm_lbracket, 0, sizeof(word_t)*bitmap.n);
+		memset(bitmap.bm_rbracket, 0, sizeof(word_t)*bitmap.n);
 
 		if (useArray)
 		{
 			memset(bitmap.bm_comma, 0, sizeof(word_t)*bitmap.n);
-			memset(bitmap.bm_lbracket, 0, sizeof(word_t)*bitmap.n);
-			memset(bitmap.bm_rbracket, 0, sizeof(word_t)*bitmap.n);
 		}
 
 		int remainder = 0;
@@ -47,6 +47,12 @@ namespace tftj
 			case '}':
 				bitmap.bm_rbrace[index] |= mask;
 				break;
+			case '[':
+				bitmap.bm_lbracket[index] |= mask;
+				break;
+			case ']':
+				bitmap.bm_rbracket[index] |= mask;
+				break;
 			}
 
 			if (useArray)
@@ -54,12 +60,6 @@ namespace tftj
 				switch (s[i]) {
 				case ',':
 					bitmap.bm_comma[index] |= mask;
-					break;
-				case '[':
-					bitmap.bm_lbracket[index] |= mask;
-					break;
-				case ']':
-					bitmap.bm_rbracket[index] |= mask;
 					break;
 				}
 			}

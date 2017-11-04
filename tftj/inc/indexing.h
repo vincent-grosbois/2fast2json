@@ -21,6 +21,8 @@ namespace tftj
 		word_t* const bm_colon;
 		word_t* const bm_lbrace;
 		word_t* const bm_rbrace;
+		word_t* const bm_lbracket;
+		word_t* const bm_rbracket;
 
 		word_t* const bm_string;
 
@@ -28,13 +30,11 @@ namespace tftj
 
 		//only needed for arrays:
 		word_t* const bm_comma;
-		word_t* const bm_lbracket;
-		word_t* const bm_rbracket;
 		word_t* const bm_commas;
 
 		const std::string& str;
 
-		//permanent memory requirement : sizeof(word_t) * n * (6 +  max_depth) + (max_array_depth > 0 ? sizeof(word_t) * n * (3 +  max_array_depth) : 0)
+		//permanent memory requirement : sizeof(word_t) * n * (8 +  max_depth) + (max_array_depth > 0 ? sizeof(word_t) * n * (1 +  max_array_depth) : 0)
 		//temp memory requirement : 0
 		Character_Bitmap(LinearAllocator& linearAllocator, int n, int max_depth, int max_array_depth, const std::string& str) :
 			n(n),
@@ -46,11 +46,11 @@ namespace tftj
 			bm_colon(linearAllocator.allocate<word_t>(n)),
 			bm_lbrace(linearAllocator.allocate<word_t>(n)),
 			bm_rbrace(linearAllocator.allocate<word_t>(n)),
+			bm_lbracket(linearAllocator.allocate<word_t>(n)),
+			bm_rbracket(linearAllocator.allocate<word_t>(n)),
 			bm_string(linearAllocator.allocate<word_t>(n)),
 			bm_colons(linearAllocator.allocate<word_t>(max_depth*n)),
 			bm_comma(max_array_depth > 0 ? linearAllocator.allocate<word_t>(n) : nullptr),
-			bm_lbracket(max_array_depth > 0 ? linearAllocator.allocate<word_t>(n) : nullptr),
-			bm_rbracket(max_array_depth > 0 ? linearAllocator.allocate<word_t>(n) : nullptr),
 			bm_commas(max_array_depth > 0 ? linearAllocator.allocate<word_t>(max_array_depth*n) : nullptr),
 			str(str)
 		{ }
@@ -287,6 +287,134 @@ namespace tftj
 		alloc.deallocate<std::pair<int, word_t>>(sizeof(word_t)*n);
 	}
 
+	struct token
+	{
+		int index;
+		word_t word;
+		bool is_braces; // is { or }
+	};
+
+	//permanent memory requirement : 0
+	//temporary memory requirement : sizeof(std::pair<int, word_t>) * sizeof(word_t) * n
+	void build_colon_and_comma_level_bm(int n, int max_depth, int max_array_depth, LinearAllocator& alloc, Character_Bitmap& bitmap)
+	{
+		auto stack = std::vector<token>();
+		int stack_index = 0;
+		int braces_depth = 0;
+		int brackets_depth = 0;
+
+		for (int i = 0; i < max_depth; ++i)
+		{
+			memcpy(&bitmap.bm_colons[i * n], bitmap.bm_colon, n * sizeof(word_t));
+		}
+
+		for (int i = 0; i < max_array_depth; ++i)
+		{
+			memcpy(&bitmap.bm_commas[i * n], bitmap.bm_comma, n * sizeof(word_t));
+		}
+
+
+		for (int i = 0; i < n; ++i)
+		{
+			word_t w_left = bitmap.bm_lbrace[i] | bitmap.bm_lbracket[i];
+			word_t w_right = bitmap.bm_rbrace[i] | bitmap.bm_rbracket[i];
+			while (true)
+			{
+				const word_t b_right = extract(w_right);
+				word_t b_left = extract(w_left);
+				while (b_left != 0 && (b_right == 0 || b_left < b_right)) {
+					token t;
+					t.index = i;
+					t.word = b_left;
+					t.is_braces = b_left & bitmap.bm_lbrace[i];
+					stack.push_back(t);
+					stack_index++;
+					if (t.is_braces)
+					{
+						braces_depth++;
+					}
+					else
+					{
+						brackets_depth++;
+					}
+					w_left = remove(w_left);
+					b_left = extract(w_left);
+				}
+
+				if (b_right != 0)
+				{
+					if (stack_index == 0)
+					{
+						//closing braces with no opening braces: malformed json
+						throw new int(0); //TODO better handling
+					}
+
+					auto t = stack.back();
+					stack.pop_back();
+					--stack_index;
+					if (t.is_braces)
+					{
+						braces_depth--;
+					}
+					else
+					{
+						brackets_depth--;
+					}
+					if (stack.empty())
+						return; //TODO: here we know if the type is array or json
+
+					bool in_braces = stack.back().is_braces;
+
+					if (in_braces)
+					{
+						int level = braces_depth - 1;
+						if (level > -1 && level < max_depth) {
+
+							int index_left = t.index; //word index of matching left brace
+							b_left = t.word; //bit index of matching left brace
+
+							//at this level, erase all colons that are between left and right matching braces:
+							if (i == index_left) {
+								bitmap.bm_colons[level*n + i] &= ~(b_right - b_left);
+							}
+							else {
+								bitmap.bm_colons[level*n + index_left] &= (b_left - 1);
+								memset(&bitmap.bm_colons[level*n + index_left + 1], 0, (i - (index_left + 1)) * sizeof(word_t));
+								bitmap.bm_colons[level*n + i] &= ~(b_right - 1);
+							}
+						}
+					}
+					else
+					{
+						int level = brackets_depth - 1;
+						if (level > -1 && level < max_array_depth) {
+
+							int index_left = t.index; //word index of matching left brace
+							b_left = t.word; //bit index of matching left brace
+
+							//at this level, erase all colons that are between left and right matching braces:
+							if (i == index_left) {
+								bitmap.bm_commas[level*n + i] &= ~(b_right - b_left);
+							}
+							else {
+								bitmap.bm_commas[level*n + index_left] &= (b_left - 1);
+								memset(&bitmap.bm_commas[level*n + index_left + 1], 0, (i - (index_left + 1)) * sizeof(word_t));
+								bitmap.bm_commas[level*n + i] &= ~(b_right - 1);
+							}
+						}
+					}
+
+				}
+				w_right = remove(w_right);
+				if (b_right == 0)
+				{
+					break;
+				}
+			}
+		}
+	}
+
+
 	std::vector<int> generate_comma_position(int start, int end, const word_t* bm_comma)
 	{
 		std::vector<int> res;
@@ -365,7 +493,7 @@ namespace tftj
 		return false;
 	}
 
-	std::pair<int, int> search_post_value_indices(const std::string& rec, int si, int ei, char ignore_once_char) {
+	std::pair<int, int> search_post_value_indices(const std::string& rec, int si, int ei, bool ignore_once_char_braces_or_bracket) {
 		bool ignore_once_char_ignored = false;
 		int n = rec.length();
 		while (si < n) {
@@ -390,7 +518,10 @@ namespace tftj
 				rec[ei] == '\n') {
 				--ei;
 			}
-			else if (rec[ei] == ignore_once_char)
+			else if (
+				( ignore_once_char_braces_or_bracket && (rec[ei] == '}' || rec[ei] == ']')) ||
+				(!ignore_once_char_braces_or_bracket && (rec[ei] == ','))
+				)
 			{
 				if (ignore_once_char_ignored) {
 					break;

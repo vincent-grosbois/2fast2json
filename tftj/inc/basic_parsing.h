@@ -30,10 +30,11 @@ namespace tftj
 			}
 			if (!p.second->tree.empty())
 			{
-				basic_parse(start, end, depth, array_depth, *p.second, data);
+				//todo : not do it if this is not a json
+				basic_parse(start, end, depth+1, array_depth, *p.second, data);
 			}
 			else if (!p.second->arrays.empty())
-			{
+			{//todo : not do it if this is not an array
 				recurse_for_array(start, end, depth, array_depth+1, *p.second, data);
 			}
 		}
@@ -61,7 +62,7 @@ namespace tftj
 
 			if (has_field)
 			{
-				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1) ? '}' : ',');
+				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1) ? true : false);
 
 				if (inner_tree->isQueried) {
 					std::string field = data.str.substr(value_indices.first, value_indices.second - value_indices.first + 1);
@@ -71,10 +72,12 @@ namespace tftj
 				}
 				if (!inner_tree->tree.empty())
 				{
+					//todo : not do it if this is not a json
 					basic_parse(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data);
 				}
 				else if (!inner_tree->arrays.empty())
 				{
+					//todo : not do it if this is not an array
 					recurse_for_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data);
 				}
 			}

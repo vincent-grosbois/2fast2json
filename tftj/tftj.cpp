@@ -18,7 +18,7 @@ namespace tftj
 		const int n = (s.size() + word_bits - 1) / word_bits;
 
 		int memory_bytes = 
-			sizeof(word_t) * n * (6 + max_depth) + (needArray ? sizeof(word_t) * n * (3 + max_array_depth) : 0) +
+			sizeof(word_t) * n * (8 + max_depth) + (needArray ? sizeof(word_t) * n * (1 + max_array_depth) : 0) +
 			sizeof(std::pair<int, word_t >) * sizeof(word_t) * n;
 
 		LinearAllocator alloc(memory_bytes);
@@ -46,7 +46,7 @@ namespace tftj
 		remove_string_items(n, char_bitmap.bm_rbrace, char_bitmap.bm_string);
 
 		//step 5: build colon bitmap by depth level
-		build_colon_level_bm(n, max_depth, alloc, char_bitmap);
+		//build_colon_level_bm(n, max_depth, alloc, char_bitmap);
 
 		if (needArray)
 		{
@@ -55,10 +55,10 @@ namespace tftj
 			remove_string_items(n, char_bitmap.bm_lbracket, char_bitmap.bm_string);
 			remove_string_items(n, char_bitmap.bm_rbracket, char_bitmap.bm_string);
 
-			build_comma_level_bm(n, max_array_depth, alloc, char_bitmap);
+			
 		}
 
-
+		build_colon_and_comma_level_bm(n, max_depth, max_array_depth, alloc, char_bitmap);
 		if (!query._tree.tree.empty())
 		{
 			basic_parse(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
@@ -89,9 +89,13 @@ int main(int argc, char *argv[])
 	a.push_back("name");
 	a.push_back("_id");*/
 	//a.push_back("_id.$oid");
-
-	a.push_back("[1]");
-	a.push_back("[1].a.b");
+	
+	a.push_back("a");
+	a.push_back("a.[1]");
+	a.push_back("a.[1].c");
+	a.push_back("a.[2]");
+	
+	//a.push_back("a.b");
 	Query my_res(a);
 
 	int i = 1;
