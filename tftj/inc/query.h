@@ -16,6 +16,7 @@ struct QueryNode
 {
 	std::string node;
 	bool isQueried;
+	int queryIndex;
 
 	std::unordered_map<std::string, QueryNode*> tree;
 	std::unordered_map<int, QueryNode*> arrays;
@@ -26,9 +27,10 @@ struct QueryNode
 		isQueried = false;
 	}
 
-	void addQueried()
+	void addQueried(int index)
 	{
 		isQueried = true;
+		queryIndex = index;
 	}
 
 	QueryNode* getArrayQueried(const std::vector<int>& indices)
@@ -137,7 +139,7 @@ bool do_query(const Query::map_t& tree, const std::string& field, const Query::m
 	return true;
 };
 
-void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth);
+void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth, int index);
 
 QueryNode parse_query(const std::vector<std::string>& query, int* depth, int* array_depth)
 {
@@ -145,23 +147,24 @@ QueryNode parse_query(const std::vector<std::string>& query, int* depth, int* ar
 
 	int max_depth = 0;
 	int max_array_depth = 0;
-
+	int index = 0;
 	for(auto q : query)
 	{
 		int depth = 0;
 		int array_depth = 0;
-		parseQuery2(q, root, depth, array_depth);
+		parseQuery2(q, root, depth, array_depth, index);
 		if (depth > max_depth)
 			max_depth = depth;
 		if (array_depth > max_array_depth)
 			max_array_depth = array_depth;
+		++index;
 	}
 	*depth = max_depth; 
 	*array_depth = max_array_depth;
 	return root;
 }
 
-void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth)
+void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth, int index)
 {
 	if (str == "")
 		return;
@@ -193,13 +196,13 @@ void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array
 
 	if (dot_pos == std::string::npos)
 	{
-		array_node->addQueried();
+		array_node->addQueried(index);
 		return;
 	}
 
 	std::string next = str.substr(dot_pos + 1);
 
-	parseQuery2(next, *array_node, depth, array_depth);
+	parseQuery2(next, *array_node, depth, array_depth, index);
 }
 
 #endif

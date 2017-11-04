@@ -4,15 +4,16 @@
 #include "config.h"
 #include "query.h"
 #include "indexing.h"
+#include "output_reader.h"
 namespace tftj
 {
 	int c = 0;
 	std::string aa;
 
 
-	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data);
+	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data, OutputReader& out);
 
-	void basic_parse_array(int start_, int end_, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
+	void basic_parse_array(int start_, int end_, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data, OutputReader& out)
 	{
 		//check if the next opening symbol is a [
 
@@ -60,20 +61,21 @@ namespace tftj
 			if (p.second->isQueried)
 			{
 				std::string field = data.str.substr(start, end - start + 1);
-				std::cout << "key: " << p.second->node << "  : \n" << field << "\n\n";
+				//std::cout << "key: " << p.second->node << "  : \n" << field << "\n\n";
+				out.received(p.second->queryIndex, start, end);
 			}
 			if (!p.second->tree.empty())
 			{
-				basic_parse_json(start, end, depth+1, array_depth, *p.second, data);
+				basic_parse_json(start, end, depth+1, array_depth, *p.second, data, out);
 			}
 			else if (!p.second->arrays.empty())
 			{
-				basic_parse_array(start, end, depth, array_depth+1, *p.second, data);
+				basic_parse_array(start, end, depth, array_depth+1, *p.second, data, out);
 			}
 		}
 	}
 
-	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
+	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data, OutputReader& out)
 	{
 		//check if the next opening symbol is a {
 
@@ -113,7 +115,7 @@ namespace tftj
 
 		for (int i = pos.size() - 1; i >= 0; --i)
 		{
-			//look for the indices that a quoted word between post[i-1] and pos[i]: this is the key at this position
+			//look for the indices that a quoted word between pos[i-1] and pos[i]: this is the key at this position
 			std::pair<int, int> field_i;
 			bool success = search_pre_field_indices(data.bm_quote, i > 0 ? pos[i - 1] : 0, pos[i], &field_i);
 
@@ -130,18 +132,19 @@ namespace tftj
 				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1) ? true : false);
 
 				if (inner_tree->isQueried) {
-					std::string field = data.str.substr(value_indices.first, value_indices.second - value_indices.first + 1);
-					std::cout << "key: " << inner_tree->node << "  : \n" << field << "\n\n";
+					//std::string field = data.str.substr(value_indices.first, value_indices.second - value_indices.first + 1);
+					//std::cout << "key: " << inner_tree->node << "  : \n" << field << "\n\n";
+					out.received(inner_tree->queryIndex, value_indices.first, value_indices.second);
 					++c;
-					aa = field;
+					//aa = field;
 				}
 				if (!inner_tree->tree.empty())
 				{
-					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data);
+					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data, out);
 				}
 				else if (!inner_tree->arrays.empty())
 				{
-					basic_parse_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data);
+					basic_parse_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data, out);
 				}
 			}
 

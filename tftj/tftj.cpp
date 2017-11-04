@@ -7,10 +7,11 @@
 #include "inc/bitmap.h"
 #include "inc/avx/bitmap_avx2.h"
 #include "inc/basic_parsing.h"
+#include "inc/output_reader.h"
 
 namespace tftj
 {
-	void parse(const std::string& s, const Query& query)
+	void parse(const std::string& s, const Query& query, OutputReader& outputReader)
 	{
 		const int max_depth = query._depth;
 		const int max_array_depth = query._array_depth;
@@ -57,11 +58,11 @@ namespace tftj
 
 		if (!query._tree.tree.empty())
 		{
-			basic_parse_json(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
+			basic_parse_json(0, s.size() - 1, 0, 0, query._tree, char_bitmap, outputReader);
 		}
 		else if(!query._tree.arrays.empty())
 		{
-			basic_parse_array(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
+			basic_parse_array(0, s.size() - 1, 0, 0, query._tree, char_bitmap, outputReader);
 		}
 	}
 
@@ -70,20 +71,20 @@ namespace tftj
 
 int main(int argc, char *argv[])
 {
-	std::string file = "D:\\dev\\mison\\companies2.json";
+	std::string file = "D:\\dev\\mison\\companies.json";
 
 	std::ifstream infile(file);
 
-	std::string toto;
+	std::string line;
 
 
 	std::vector<std::string> a;
-	//a.push_back("acquisition[0][2].price_amount");
-	/*a.push_back("acquisition.price_amount");
+	a.push_back("acquisition[0][2].price_amount");
+	//a.push_back("acquisition.price_amount");
 	a.push_back("image.available_sizes[1]");
 	a.push_back("image.available_sizes[1][1]");
 	a.push_back("name");
-	a.push_back("_id");*/
+	a.push_back("_id");
 	//a.push_back("_id.$oid");
 	
 	//set 1 :
@@ -92,21 +93,60 @@ int main(int argc, char *argv[])
 	a.push_back("a.[1].c");
 	a.push_back("a.[2]");
 	*/
-	a.push_back("a.b");
+	//set 2:
+	//a.push_back("a.b");
 	Query my_res(a);
+
+	class Toto : public OutputReader
+	{
+		const std::string* val;
+		std::vector<std::string> list;
+		std::ofstream myfile;
+		
+	public:
+		Toto(std::vector<std::string>& a)
+		{
+			list = a;
+			myfile.open("result.txt");
+		}
+
+		virtual void newRecord(const std::string& str)
+		{
+			val = &str;
+			myfile << '\n';
+		}
+
+		virtual void endParsing()
+		{
+			myfile.close();
+		}
+
+		virtual void received(int keyIndex, int startIndex, int endIndex)
+		{
+			myfile << list[keyIndex] << " : " << val->substr(startIndex, endIndex - startIndex + 1) << '\n';
+		}
+
+
+		virtual ~Toto() {};
+	};
+
+	OutputReader* out = new Toto(a);
 
 	int i = 1;
 	while (infile.good())
 	{
-		std::getline(infile, toto);
-		if (toto.empty())
+		std::getline(infile, line);
+		if (line.empty())
 			continue;
-		tftj::parse(toto, my_res);
+		out->newRecord(line);
+		tftj::parse(line, my_res, *out);
 		++i;
 	}
+	out->endParsing();
 
-	std::cout << tftj::c;
-	std::cout << tftj::aa;
+	std::cout << tftj::c << '\n';
+	std::cout << tftj::aa << '\n';
+	std::cout << i << '\n';
 	infile.close();
 
 
