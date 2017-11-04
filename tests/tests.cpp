@@ -228,12 +228,7 @@ TEST_CASE("Parse json with levels") {
 	int n = (input.size() + word_bits - 1) / word_bits;
 	Character_Bitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
-	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
-	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
-	remove_string_items(n, bm.bm_colon, bm.bm_string);
-	remove_string_items(n, bm.bm_lbrace, bm.bm_string);
-	remove_string_items(n, bm.bm_rbrace, bm.bm_string);
-	build_colon_level_bm(n, 3, alloc, bm);
+	build_colon_and_comma_level_bm(n, 3, 0, alloc, bm);
 
 	REQUIRE(bm.bm_colons[0] == reverseBits(masklvl0));
 	REQUIRE(bm.bm_colons[1] == reverseBits(masklvl1));
@@ -241,22 +236,64 @@ TEST_CASE("Parse json with levels") {
 #else
 	std::string input = R"({a:{b:{}}, c:{} })";
 	word_t masklvl0    = 0b00100000000010000000000000000000;
-	word_t masklvl1    = 0b00100100000000000000000000000000;
+	word_t masklvl1    = 0b00100100000010000000000000000000;
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
 	Character_Bitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
-	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
-	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
-	remove_string_items(n, bm.bm_colon, bm.bm_string);
-	remove_string_items(n, bm.bm_lbrace, bm.bm_string);
-	remove_string_items(n, bm.bm_rbrace, bm.bm_string);
-	build_colon_level_bm(n, 3, alloc, bm);
+	build_colon_and_comma_level_bm(n, 3, 0, alloc, bm);
 
 	REQUIRE(bm.bm_colons[0] == reverseBits(masklvl0));
 	REQUIRE(bm.bm_colons[1] == reverseBits(masklvl1));
 	REQUIRE(bm.bm_colons[2] == reverseBits(masklvl1));
+#endif
+
+}
+
+TEST_CASE("Parse json with levels 2") {
+
+#ifdef TFTJ_ENVIRONMENT64
+	std::string input = R"({"a":["toto", {"b":"val1", "c":"toto"}, "OK"]}])";
+	word_t masklvl0    = 0b0000100000000000000000000000000000000000000000000000000000000000;
+	word_t masklvl1    = 0b0000100000000000001000000000001000000000000000000000000000000000;
+	word_t arraylvl0   = 0b0000000000001000000000000000000000000010000000000000000000000000;
+
+	LinearAllocator alloc(1000);
+	int n = (input.size() + word_bits - 1) / word_bits;
+	Character_Bitmap bm(alloc, n, 3, 1, input);
+	create_bitmap(bm, input);
+	build_colon_and_comma_level_bm(n, 3, 1, alloc, bm);
+
+	REQUIRE(bm.bm_colons[0] == reverseBits(masklvl0));
+	REQUIRE(bm.bm_colons[1] == reverseBits(masklvl1));
+	REQUIRE(bm.bm_colons[2] == reverseBits(masklvl1));
+
+	REQUIRE(bm.bm_commas[0] == reverseBits(arraylvl0));
+#else
+	std::string input = R"({"a":["toto", {"b":"val1", "c":"toto"}, "OK"]}])";
+	word_t masklvl0_0  = 0b00001000000000000000000000000000;
+	word_t masklvl0_1  =                                 0b00000000000000000000000000000000;
+	word_t masklvl1_0  = 0b00001000000000000010000000000010;
+	word_t masklvl1_1  =                                 0b00000000000000000000000000000000;
+	word_t arraylvl0_0 = 0b00000000000010000000000000000000;
+	word_t arraylvl0_1 =                                 0b00000010000000000000000000000000;
+
+	LinearAllocator alloc(1000);
+	int n = (input.size() + word_bits - 1) / word_bits;
+	Character_Bitmap bm(alloc, n, 3, 1, input);
+	create_bitmap(bm, input);
+	build_colon_and_comma_level_bm(n, 3, 1, alloc, bm);
+
+	REQUIRE(bm.bm_colons[0 * 2 + 0] == reverseBits(masklvl0_0));
+	REQUIRE(bm.bm_colons[0 * 2 + 1] == reverseBits(masklvl0_1));
+	REQUIRE(bm.bm_colons[1 * 2 + 0] == reverseBits(masklvl1_0));
+	REQUIRE(bm.bm_colons[1 * 2 + 1] == reverseBits(masklvl1_1));
+	REQUIRE(bm.bm_colons[2 * 2 + 0] == reverseBits(masklvl1_0));
+	REQUIRE(bm.bm_colons[2 * 2 + 1] == reverseBits(masklvl1_1));
+
+	REQUIRE(bm.bm_commas[0 * 2 + 0] == reverseBits(arraylvl0_0));
+	REQUIRE(bm.bm_commas[0 * 2 + 1] == reverseBits(arraylvl0_1));
 #endif
 
 }
