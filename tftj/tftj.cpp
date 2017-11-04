@@ -44,28 +44,24 @@ namespace tftj
 		remove_string_items(n, char_bitmap.bm_colon, char_bitmap.bm_string);
 		remove_string_items(n, char_bitmap.bm_lbrace, char_bitmap.bm_string);
 		remove_string_items(n, char_bitmap.bm_rbrace, char_bitmap.bm_string);
-
-		//step 5: build colon bitmap by depth level
-		//build_colon_level_bm(n, max_depth, alloc, char_bitmap);
+		remove_string_items(n, char_bitmap.bm_lbracket, char_bitmap.bm_string);
+		remove_string_items(n, char_bitmap.bm_rbracket, char_bitmap.bm_string);
 
 		if (needArray)
 		{
-			//step 4 and 5 for arrays
+			//step 4 for arrays
 			remove_string_items(n, char_bitmap.bm_comma, char_bitmap.bm_string);
-			remove_string_items(n, char_bitmap.bm_lbracket, char_bitmap.bm_string);
-			remove_string_items(n, char_bitmap.bm_rbracket, char_bitmap.bm_string);
-
-			
 		}
 
 		build_colon_and_comma_level_bm(n, max_depth, max_array_depth, alloc, char_bitmap);
+
 		if (!query._tree.tree.empty())
 		{
-			basic_parse(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
+			basic_parse_json(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
 		}
 		else if(!query._tree.arrays.empty())
 		{
-			recurse_for_array(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
+			basic_parse_array(0, s.size() - 1, 0, 0, query._tree, char_bitmap);
 		}
 	}
 
@@ -90,12 +86,13 @@ int main(int argc, char *argv[])
 	a.push_back("_id");*/
 	//a.push_back("_id.$oid");
 	
-	a.push_back("a");
+	//set 1 :
+	/*a.push_back("a");
 	a.push_back("a.[1]");
 	a.push_back("a.[1].c");
 	a.push_back("a.[2]");
-	
-	//a.push_back("a.b");
+	*/
+	a.push_back("a.b");
 	Query my_res(a);
 
 	int i = 1;

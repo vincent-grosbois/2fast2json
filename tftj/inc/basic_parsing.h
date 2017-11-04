@@ -10,10 +10,44 @@ namespace tftj
 	std::string aa;
 
 
-	void basic_parse(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data);
+	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data);
 
-	void recurse_for_array(int start_, int end_, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
+	void basic_parse_array(int start_, int end_, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
 	{
+		//check if the next opening symbol is a [
+
+		int word_start = start_ / word_bits;
+		int word_end = (end_ + word_bits - 1) / word_bits;
+
+		bool l_brackets_found = false;
+
+		for (int w = word_start; w <= word_end; ++w)
+		{
+			word_t cumulative = data.bm_lbrace[w] | data.bm_lbracket[w];
+
+			word_t b_cumulative = extract(cumulative);
+
+			while (b_cumulative != 0 && 
+				((w == word_start && (word_start*word_bits + popcount(smear(b_cumulative))-1 < start_ ) )||
+				 (w == word_end && (word_end*word_bits + popcount(smear(b_cumulative)) - 1 >= end_)))
+				)
+			{
+				cumulative = remove(cumulative);
+				b_cumulative = extract(cumulative);
+			}
+
+			if (b_cumulative != 0) {
+				l_brackets_found = b_cumulative &  data.bm_lbracket[w];
+				break;
+			}
+		}
+
+		if (!l_brackets_found)
+		{
+			return;
+		}
+
+
 		std::vector<int> pos_commas = generate_comma_position(start_, end_, &data.bm_commas[array_depth*data.n]);
 		for (auto& p : query.arrays)
 		{
@@ -30,18 +64,49 @@ namespace tftj
 			}
 			if (!p.second->tree.empty())
 			{
-				//todo : not do it if this is not a json
-				basic_parse(start, end, depth+1, array_depth, *p.second, data);
+				basic_parse_json(start, end, depth+1, array_depth, *p.second, data);
 			}
 			else if (!p.second->arrays.empty())
-			{//todo : not do it if this is not an array
-				recurse_for_array(start, end, depth, array_depth+1, *p.second, data);
+			{
+				basic_parse_array(start, end, depth, array_depth+1, *p.second, data);
 			}
 		}
 	}
 
-	void basic_parse(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
+	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data)
 	{
+		//check if the next opening symbol is a {
+
+		int word_start = start / word_bits;
+		int word_end = (end + word_bits-1) / word_bits;
+
+		bool l_braces_found = false;
+
+		for (int w = word_start; w <= word_end; ++w)
+		{
+			word_t cumulative = data.bm_lbrace[w] | data.bm_lbracket[w];
+			word_t b_cumulative = extract(cumulative);
+
+			while (b_cumulative != 0 &&
+				((w == word_start && (word_start*word_bits + popcount(smear(b_cumulative)) - 1 < start)) ||
+				(w == word_end && (word_end*word_bits + popcount(smear(b_cumulative)) - 1 >= end)))
+				)
+			{
+				cumulative = remove(cumulative);
+				b_cumulative = extract(cumulative);
+			}
+
+			if (b_cumulative != 0) {
+				l_braces_found = b_cumulative &  data.bm_lbrace[w];
+				break;
+			}
+		}
+
+		if (!l_braces_found)
+		{
+			return;
+		}
+
 		std::vector<int> pos = generate_colon_position(start, end, &data.bm_colons[depth*data.n]);
 
 		int value_end_i = end;
@@ -72,13 +137,11 @@ namespace tftj
 				}
 				if (!inner_tree->tree.empty())
 				{
-					//todo : not do it if this is not a json
-					basic_parse(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data);
+					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data);
 				}
 				else if (!inner_tree->arrays.empty())
 				{
-					//todo : not do it if this is not an array
-					recurse_for_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data);
+					basic_parse_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data);
 				}
 			}
 
