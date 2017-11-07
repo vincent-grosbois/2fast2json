@@ -1,8 +1,8 @@
 #include <string.h>
 #include <string>
+#include <fstream>
 #include "inc/indexing.h"
 #include "query.h"
-#include <fstream>
 #include "inc/debug.h"
 #include "inc/bitmap.h"
 #include "inc/avx/bitmap_avx2.h"
@@ -69,6 +69,62 @@ namespace tftj
 
 }
 
+class OutputCsv : public OutputReader
+{
+	const std::string* val;
+	std::vector<std::string> keys;
+	std::ofstream myfile;
+	std::vector<std::pair<bool, std::string>> values;
+
+public:
+	OutputCsv(std::vector<std::string>& a, const std::string& fileName, bool printHeader = false)
+	{
+		keys = a;
+		values.resize(keys.size(), std::make_pair(false, ""));
+		myfile.open(fileName);
+
+		if (printHeader)
+		{
+			for (int i = 0; i < keys.size() - 1; ++i)
+			{
+				myfile << keys[i] << '\t';
+			}
+			myfile << keys[keys.size() - 1] << '\n';
+		}
+	}
+
+	virtual void newRecord(const std::string& str)
+	{
+		val = &str;
+		for (int i = 0; i < values.size(); ++i)
+		{
+			values[i] = std::make_pair(false, "");
+		}
+	}
+
+	virtual void endRecord()
+	{
+		for (int i = 0; i < keys.size() - 1; ++i)
+		{
+			myfile << values[i].second << '\t';
+		}
+		myfile << values[keys.size()-1].second << '\n';
+	}
+
+	virtual void endParsing()
+	{
+		myfile.close();
+	}
+
+	virtual void received(int keyIndex, int startIndex, int endIndex)
+	{
+		values[keyIndex] = std::make_pair(true, val->substr(startIndex, endIndex - startIndex + 1));
+	}
+
+
+	virtual ~OutputCsv() {};
+};
+
 int main(int argc, char *argv[])
 {
 	std::string file = "D:\\dev\\mison\\companies.json";
@@ -79,11 +135,10 @@ int main(int argc, char *argv[])
 
 
 	std::vector<std::string> a;
-	a.push_back("acquisition[0][2].price_amount");
-	//a.push_back("acquisition.price_amount");
+	a.push_back("name");
+	a.push_back("acquisition.price_amount");
 	a.push_back("image.available_sizes[1]");
 	a.push_back("image.available_sizes[1][1]");
-	a.push_back("name");
 	a.push_back("_id");
 	//a.push_back("_id.$oid");
 	
@@ -97,40 +152,7 @@ int main(int argc, char *argv[])
 	//a.push_back("a.b");
 	Query my_res(a);
 
-	class Toto : public OutputReader
-	{
-		const std::string* val;
-		std::vector<std::string> list;
-		std::ofstream myfile;
-		
-	public:
-		Toto(std::vector<std::string>& a)
-		{
-			list = a;
-			myfile.open("result.txt");
-		}
-
-		virtual void newRecord(const std::string& str)
-		{
-			val = &str;
-			myfile << '\n';
-		}
-
-		virtual void endParsing()
-		{
-			myfile.close();
-		}
-
-		virtual void received(int keyIndex, int startIndex, int endIndex)
-		{
-			myfile << list[keyIndex] << " : " << val->substr(startIndex, endIndex - startIndex + 1) << '\n';
-		}
-
-
-		virtual ~Toto() {};
-	};
-
-	OutputReader* out = new Toto(a);
+	OutputReader* out = new OutputCsv(a, "myfile.txt", true);
 
 	int i = 1;
 	while (infile.good())
@@ -140,6 +162,7 @@ int main(int argc, char *argv[])
 			continue;
 		out->newRecord(line);
 		tftj::parse(line, my_res, *out);
+		out->endRecord();
 		++i;
 	}
 	out->endParsing();
