@@ -18,11 +18,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="tftj\tftj.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="tftj\inc\basic_parsing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,6 +49,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tftj\inc\avx\bitmap_avx2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tftj\tftj.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tftj\inc\parsing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

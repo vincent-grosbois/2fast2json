@@ -44,6 +44,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PlatformToolset>v141</PlatformToolset>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -110,9 +111,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="tftj\tftj.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="tftj\inc\avx\bitmap_avx2.h" />
     <ClInclude Include="tftj\inc\basic_parsing.h" />
     <ClInclude Include="tftj\inc\bitmap.h" />
@@ -122,8 +120,10 @@
     <ClInclude Include="tftj\inc\indexing.h" />
     <ClInclude Include="tftj\inc\linear_allocator.h" />
     <ClInclude Include="tftj\inc\output_reader.h" />
+    <ClInclude Include="tftj\inc\parsing.h" />
     <ClInclude Include="tftj\inc\query.h" />
     <ClInclude Include="tftj\inc\targetver.h" />
+    <ClInclude Include="tftj\tftj.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
