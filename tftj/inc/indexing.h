@@ -368,7 +368,7 @@ namespace tftj
 
 	std::pair<int, int> search_post_value_indices(const std::string& rec, int si, int ei, bool ignore_once_char_braces_or_bracket) {
 		bool ignore_once_char_ignored = false;
-		int n = rec.length();
+		int n = static_cast<int>(rec.length());
 		while (si < n) {
 			if (rec[si] == ' ' ||
 				rec[si] == '\t' ||

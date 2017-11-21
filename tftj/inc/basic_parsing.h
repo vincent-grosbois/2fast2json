@@ -113,7 +113,7 @@ namespace tftj
 
 		int value_end_i = end;
 
-		for (int i = pos.size() - 1; i >= 0; --i)
+		for (int i = static_cast<int>(pos.size()) - 1; i >= 0; --i)
 		{
 			//look for the indices that a quoted word between pos[i-1] and pos[i]: this is the key at this position
 			std::pair<int, int> field_i;

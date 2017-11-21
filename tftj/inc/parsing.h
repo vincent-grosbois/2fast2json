@@ -16,7 +16,7 @@ namespace tftj
 		const int max_depth = query._depth;
 		const int max_array_depth = query._array_depth;
 		const bool needArray = max_array_depth > 0;
-		const int n = (s.size() + word_bits - 1) / word_bits;
+		const int n = (static_cast<int>(s.size()) + word_bits - 1) / word_bits;
 
 		int memory_bytes = 
 			sizeof(word_t) * n * (8 + max_depth) + (needArray ? sizeof(word_t) * n * (1 + max_array_depth) : 0) +
@@ -58,11 +58,11 @@ namespace tftj
 
 		if (!query._tree.tree.empty())
 		{
-			basic_parse_json(0, s.size() - 1, 0, 0, query._tree, char_bitmap, outputReader);
+			basic_parse_json(0, static_cast<int>(s.size()) - 1, 0, 0, query._tree, char_bitmap, outputReader);
 		}
 		else if(!query._tree.arrays.empty())
 		{
-			basic_parse_array(0, s.size() - 1, 0, 0, query._tree, char_bitmap, outputReader);
+			basic_parse_array(0, static_cast<int>(s.size()) - 1, 0, 0, query._tree, char_bitmap, outputReader);
 		}
 	}
 

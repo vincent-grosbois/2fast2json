@@ -24,7 +24,7 @@ namespace tftj
 		}
 
 		int remainder = 0;
-		int size = s.size();
+		int size = static_cast<int>(s.size());
 
 		for (int i = 0; i < size; ++i)
 		{

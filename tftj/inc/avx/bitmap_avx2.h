@@ -27,7 +27,7 @@ namespace tftj
 	template<bool useArray>
 	void create_bitmap_avx2_64bits_base(Character_Bitmap& bitmap, const std::string& s)
 	{
-		const int n = s.size();
+		const int n = static_cast<int>(s.size());
 		const int num_full_words = n / 64;
 		const int remainder = n % 64;
 

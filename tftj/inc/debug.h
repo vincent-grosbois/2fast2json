@@ -16,7 +16,7 @@ namespace tftj
 
 	void dump_str(const std::string& s, bool reversed = true)
 	{
-		int size = (s.length() + word_bits - 1) / word_bits;
+		int size = (static_cast<int>(s.length()) + word_bits - 1) / word_bits;
 		for (int i = 0; i < size; ++i)
 		{
 			auto substr = s.substr(i*word_bits, word_bits);
