@@ -1,0 +1,1 @@
+time Release/tftj_main.exe D:\\dev\\2fast2json\\examples\\companies.json name,acquisition.price_amount,image.available_sizes[1],image.available_sizes[1][1],_id myfile.txt

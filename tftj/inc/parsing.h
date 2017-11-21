@@ -11,7 +11,7 @@
 
 namespace tftj
 {
-	void parse(const std::string& s, const Query& query, OutputReader& outputReader)
+	void parse(const std::string& s, const Query& query, OutputReader& outputReader, bool useAvx2)
 	{
 		const int max_depth = query._depth;
 		const int max_array_depth = query._array_depth;
@@ -31,7 +31,14 @@ namespace tftj
 		//create_bitmap(char_bitmap, s);
 
 		Character_Bitmap char_bitmap(alloc, n, max_depth, max_array_depth, s);
-		create_bitmap_avx2(char_bitmap, s);
+		if (useAvx2)
+		{
+			create_bitmap_avx2(char_bitmap, s);
+		}
+		else
+		{
+			create_bitmap(char_bitmap, s);
+		}
 
 		//int diff = memcmp(alloc.start_memory, alloc2.start_memory, memory_bytes);
 
