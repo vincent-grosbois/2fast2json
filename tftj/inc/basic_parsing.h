@@ -7,10 +7,6 @@
 #include "output_reader.h"
 namespace tftj
 {
-	int c = 0;
-	std::string aa;
-
-
 	void basic_parse_json(int start, int end, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data, OutputReader& out);
 
 	void basic_parse_array(int start_, int end_, int depth, int array_depth, const Query::map_t& query, const Character_Bitmap& data, OutputReader& out)
@@ -135,8 +131,6 @@ namespace tftj
 					//std::string field = data.str.substr(value_indices.first, value_indices.second - value_indices.first + 1);
 					//std::cout << "key: " << inner_tree->node << "  : \n" << field << "\n\n";
 					out.received(inner_tree->queryIndex, value_indices.first, value_indices.second);
-					++c;
-					//aa = field;
 				}
 				if (!inner_tree->tree.empty())
 				{
