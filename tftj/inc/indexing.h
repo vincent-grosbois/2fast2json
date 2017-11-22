@@ -8,11 +8,11 @@
 
 namespace tftj
 {
-	struct Character_Bitmap
+	struct CharacterBitmap
 	{
 		const int n;
-		const int max_depth;
-		const int max_array_depth;
+		const int max_children_depth;
+		const int max_siblings_depth;
 
 		LinearAllocator& allocator;
 
@@ -32,14 +32,15 @@ namespace tftj
 		word_t* const bm_comma;
 		word_t* const bm_commas;
 
+		//the initial json to parse:
 		const std::string& str;
 
-		//permanent memory requirement : sizeof(word_t) * n * (8 +  max_depth) + (max_array_depth > 0 ? sizeof(word_t) * n * (1 +  max_array_depth) : 0)
+		//permanent memory requirement : sizeof(word_t) * n * (8 +  max_children_depth) + (max_siblings_depth > 0 ? sizeof(word_t) * n * (1 +  max_siblings_depth) : 0)
 		//temp memory requirement : 0
-		Character_Bitmap(LinearAllocator& linearAllocator, int n, int max_depth, int max_array_depth, const std::string& str) :
+		CharacterBitmap(LinearAllocator& linearAllocator, int n, int max_children_depth, int max_siblings_depth, const std::string& str) :
 			n(n),
-			max_depth(max_depth),
-			max_array_depth(max_array_depth),
+			max_children_depth(max_children_depth),
+			max_siblings_depth(max_siblings_depth),
 			allocator(linearAllocator),
 			bm_backslash(linearAllocator.allocate<word_t>(n)),
 			bm_quote(linearAllocator.allocate<word_t>(n)),
@@ -49,22 +50,23 @@ namespace tftj
 			bm_lbracket(linearAllocator.allocate<word_t>(n)),
 			bm_rbracket(linearAllocator.allocate<word_t>(n)),
 			bm_string(linearAllocator.allocate<word_t>(n)),
-			bm_colons(linearAllocator.allocate<word_t>(max_depth*n)),
-			bm_comma(max_array_depth > 0 ? linearAllocator.allocate<word_t>(n) : nullptr),
-			bm_commas(max_array_depth > 0 ? linearAllocator.allocate<word_t>(max_array_depth*n) : nullptr),
+			bm_colons(linearAllocator.allocate<word_t>(max_children_depth*n)),
+			bm_comma(max_siblings_depth > 0 ? linearAllocator.allocate<word_t>(n) : nullptr),
+			bm_commas(max_siblings_depth > 0 ? linearAllocator.allocate<word_t>(max_siblings_depth*n) : nullptr),
 			str(str)
 		{ }
 
-		Character_Bitmap(const Character_Bitmap&) = delete;
-		Character_Bitmap(const Character_Bitmap&&) = delete;
-		Character_Bitmap& operator=(const Character_Bitmap&) = delete;
-		Character_Bitmap& operator=(const Character_Bitmap&&) = delete;
+		CharacterBitmap(const CharacterBitmap&) = delete;
+		CharacterBitmap(const CharacterBitmap&&) = delete;
+		CharacterBitmap& operator=(const CharacterBitmap&) = delete;
+		CharacterBitmap& operator=(const CharacterBitmap&&) = delete;
 	};
 
-
+	//remove from bm_quote the quotes that are escaped, ie the quotes that are preceded by an *odd* number of backslashes
+	//it might be necessary to go back several words before to find where the preceding backslashes end
 	void check_for_escaped_quotes(int n, const word_t* bm_backslash, word_t* bm_quote)
 	{
-		//check for '\"' pattern
+		//check for \" pattern
 		std::vector<word_t> bm_backslash_quote = std::vector<word_t>(n);
 		for (int i = 0; i < n - 1; ++i)
 		{
@@ -169,7 +171,7 @@ namespace tftj
 
 	//permanent memory requirement : 0
 	//temporary memory requirement : sizeof(std::pair<int, word_t>) * sizeof(word_t) * n
-	void build_colon_and_comma_level_bm(int n, int max_depth, int max_array_depth, LinearAllocator& alloc, Character_Bitmap& bitmap)
+	void build_colon_and_comma_level_bm(int n, int max_depth, int max_array_depth, LinearAllocator& alloc, CharacterBitmap& bitmap)
 	{
 		auto stack = std::vector<token>();
 		int stack_index = 0;

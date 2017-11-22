@@ -32,7 +32,7 @@ TEST_CASE("Character bitmap should work") {
 	int n = (input.size() + word_bits - 1) / word_bits;
 	LinearAllocator alloc(1000);
 
-	Character_Bitmap bm(alloc, n, 1, 1, input);
+	CharacterBitmap bm(alloc, n, 1, 1, input);
 
 	create_bitmap(bm, input);
 
@@ -73,7 +73,7 @@ TEST_CASE("AVX2 character bitmap should work") {
 	std::string input = R"(TOTO{OTO:OTOdgn\\jfnjksrdr","dlkk00})";
 	int n = (input.size() + word_bits - 1) / word_bits;
 	LinearAllocator alloc(1000);
-	Character_Bitmap bm(alloc, n, 1, 1, input);
+	CharacterBitmap bm(alloc, n, 1, 1, input);
 	create_bitmap_avx2(bm, input);
 
 #ifdef TFTJ_ENVIRONMENT32
@@ -117,7 +117,7 @@ word_t result		=  0b000010000001000000000000000000001000000001000000000000000000
 
 LinearAllocator alloc(1000);
 int n = (input.size() + word_bits - 1) / word_bits;
-Character_Bitmap bm(alloc, n, 1, 1, input);
+CharacterBitmap bm(alloc, n, 1, 1, input);
 create_bitmap(bm, input);
 check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote); 
 auto a = reverseBits(result);
@@ -130,7 +130,7 @@ word_t result2 =                                     0b0100000000100000000000000
 
 LinearAllocator alloc(1000);
 int n = (input.size() + word_bits - 1) / word_bits;
-Character_Bitmap bm(alloc, n, 1, 1, input);
+CharacterBitmap bm(alloc, n, 1, 1, input);
 create_bitmap(bm, input);
 
 
@@ -151,7 +151,7 @@ std::string input = R"(toto"quoted"djgkjdbgjk"123456"jsdnfkjd""jkjk)";
 word_t result1     = 0b0000011111110000000000011111110000000001000000000000000000000000;
 LinearAllocator alloc(1000);
 int n = (input.size() + word_bits - 1) / word_bits;
-Character_Bitmap bm(alloc, n, 1, 1, input);
+CharacterBitmap bm(alloc, n, 1, 1, input);
 create_bitmap(bm, input);
 
 build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
@@ -165,7 +165,7 @@ word_t result2                                     = 0b0000000100000000000000000
 
 LinearAllocator alloc(1000);
 int n = (input.size() + word_bits - 1) / word_bits;
-Character_Bitmap bm(alloc, n, 1, 1, input);
+CharacterBitmap bm(alloc, n, 1, 1, input);
 create_bitmap(bm, input);
 
 build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
@@ -183,7 +183,7 @@ TEST_CASE("remove tokens inside string") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 1, 1, input);
+	CharacterBitmap bm(alloc, n, 1, 1, input);
 	create_bitmap(bm, input);
 	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
 	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
@@ -199,7 +199,7 @@ TEST_CASE("remove tokens inside string") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 1, 1, input);
+	CharacterBitmap bm(alloc, n, 1, 1, input);
 	create_bitmap(bm, input);
 	check_for_escaped_quotes(bm.n, bm.bm_backslash, bm.bm_quote);
 	build_string_bitmap(bm.n, bm.bm_quote, bm.bm_string);
@@ -226,7 +226,7 @@ TEST_CASE("Parse json with levels") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 3, 1, input);
+	CharacterBitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
 	build_colon_and_comma_level_bm(n, 3, 0, alloc, bm);
 
@@ -240,7 +240,7 @@ TEST_CASE("Parse json with levels") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 3, 1, input);
+	CharacterBitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
 	build_colon_and_comma_level_bm(n, 3, 0, alloc, bm);
 
@@ -261,7 +261,7 @@ TEST_CASE("Parse json with levels 2") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 3, 1, input);
+	CharacterBitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
 	build_colon_and_comma_level_bm(n, 3, 1, alloc, bm);
 
@@ -281,7 +281,7 @@ TEST_CASE("Parse json with levels 2") {
 
 	LinearAllocator alloc(1000);
 	int n = (input.size() + word_bits - 1) / word_bits;
-	Character_Bitmap bm(alloc, n, 3, 1, input);
+	CharacterBitmap bm(alloc, n, 3, 1, input);
 	create_bitmap(bm, input);
 	build_colon_and_comma_level_bm(n, 3, 1, alloc, bm);
 

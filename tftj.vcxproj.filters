@@ -45,9 +45,6 @@
     <ClInclude Include="tftj\inc\query.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tftj\inc\targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tftj\inc\avx\bitmap_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -11,10 +11,10 @@ namespace tftj
 	__m256i load_partial_avx2(char* data_, int remainder);
 	__m256i make_256bits_mask(char ref);
 
-	void create_bitmap_avx2_32bits(Character_Bitmap& bitmap, const std::string& s);
-	void create_bitmap_avx2_64bits(Character_Bitmap& bitmap, const std::string& s);
+	void create_bitmap_avx2_32bits(CharacterBitmap& bitmap, const std::string& s);
+	void create_bitmap_avx2_64bits(CharacterBitmap& bitmap, const std::string& s);
 
-	void create_bitmap_avx2(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_avx2(CharacterBitmap& bitmap, const std::string& s)
 	{
 #ifdef TFTJ_ENVIRONMENT64
 		create_bitmap_avx2_64bits(bitmap, s);
@@ -25,7 +25,7 @@ namespace tftj
 
 #ifdef TFTJ_ENVIRONMENT64
 	template<bool useArray>
-	void create_bitmap_avx2_64bits_base(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_avx2_64bits_base(CharacterBitmap& bitmap, const std::string& s)
 	{
 		const int n = static_cast<int>(s.size());
 		const int num_full_words = n / 64;
@@ -222,9 +222,9 @@ namespace tftj
 		}
 	}
 
-	void create_bitmap_avx2_64bits(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_avx2_64bits(CharacterBitmap& bitmap, const std::string& s)
 	{
-		if (bitmap.max_array_depth > 0)
+		if (bitmap.max_siblings_depth > 0)
 		{
 			create_bitmap_avx2_64bits_base<true>(bitmap, s);
 		}
@@ -238,7 +238,7 @@ namespace tftj
 #ifdef TFTJ_ENVIRONMENT32
 
 	template<bool useArray>
-	void create_bitmap_avx2_32bits_base(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_avx2_32bits_base(CharacterBitmap& bitmap, const std::string& s)
 	{
 		const int n = s.size();
 		const int num_full_words = n / 32;
@@ -337,7 +337,7 @@ namespace tftj
 		}
 	}
 
-	void create_bitmap_avx2_32bits(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_avx2_32bits(CharacterBitmap& bitmap, const std::string& s)
 	{
 		if (bitmap.max_array_depth > 0)
 		{

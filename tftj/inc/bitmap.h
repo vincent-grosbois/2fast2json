@@ -8,7 +8,7 @@ namespace tftj
 {
 	//non-SIMD version
 	template<bool useArray>
-	void create_bitmap_base(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap_base(CharacterBitmap& bitmap, const std::string& s)
 	{
 		memset(bitmap.bm_backslash, 0, sizeof(word_t)*bitmap.n);
 		memset(bitmap.bm_quote, 0, sizeof(word_t)*bitmap.n);
@@ -57,10 +57,8 @@ namespace tftj
 
 			if (useArray)
 			{
-				switch (s[i]) {
-				case ',':
+				if (s[i] == ',') {
 					bitmap.bm_comma[index] |= mask;
-					break;
 				}
 			}
 
@@ -71,9 +69,9 @@ namespace tftj
 		}
 	}
 
-	void create_bitmap(Character_Bitmap& bitmap, const std::string& s)
+	void create_bitmap(CharacterBitmap& bitmap, const std::string& s)
 	{
-		if (bitmap.max_array_depth > 0)
+		if (bitmap.max_siblings_depth > 0)
 		{
 			create_bitmap_base<true>(bitmap, s);
 		}

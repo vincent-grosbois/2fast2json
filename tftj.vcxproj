@@ -122,7 +122,6 @@
     <ClInclude Include="tftj\inc\output_reader.h" />
     <ClInclude Include="tftj\inc\parsing.h" />
     <ClInclude Include="tftj\inc\query.h" />
-    <ClInclude Include="tftj\inc\targetver.h" />
     <ClInclude Include="tftj\tftj.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

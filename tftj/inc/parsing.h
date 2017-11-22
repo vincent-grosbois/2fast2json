@@ -27,7 +27,7 @@ namespace tftj
 		LinearAllocator alloc(memory_bytes);
 
 		//step 1: create bitmap array
-		Character_Bitmap char_bitmap(alloc, n, max_depth, max_array_depth, json);
+		CharacterBitmap char_bitmap(alloc, n, max_depth, max_array_depth, json);
 		if (useAvx2)
 		{
 			create_bitmap_avx2(char_bitmap, json);
