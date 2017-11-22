@@ -122,6 +122,7 @@ namespace tftj
 
 	}
 
+	//set 1s in bm_string when the character is within a string (ie between real quotes), or maybe on the fence
 	void build_string_bitmap(int n, const word_t* bm_struct_quotes, word_t* bm_string)
 	{
 		int count = 0;
@@ -144,11 +145,12 @@ namespace tftj
 		}
 	}
 
-	void remove_string_items(int n, word_t* bm, const word_t* bm_string)
+	//remove characters from any bitmap when they are within a string
+	void remove_string_items(int n, word_t* bitmap, const word_t* bm_string)
 	{
 		for (int i = 0; i < n; ++i)
 		{
-			bm[i] &= ~bm_string[i];
+			bitmap[i] &= ~bm_string[i];
 		}
 	}
 
@@ -161,11 +163,14 @@ namespace tftj
 	};
 
 	//permanent memory requirement : 0
-	//temporary memory requirement : sizeof(std::pair<int, word_t>) * sizeof(word_t) * n
+	//temporary memory requirement : sizeof(token) * sizeof(word_t) * n
 	void build_colon_and_comma_level_bm(int n, int max_depth, int max_array_depth, LinearAllocator& alloc, CharacterBitmap& bitmap)
 	{
-		auto stack = std::vector<token>();
-		int stack_index = 0;
+		ScopedAllocated<token> scopeAllocated(alloc, sizeof(word_t)*n);
+
+		token* tokens = scopeAllocated.allocated;
+		int tokens_index = 0;
+
 		int braces_depth = 0;
 		int brackets_depth = 0;
 
@@ -189,13 +194,12 @@ namespace tftj
 				const word_t b_right = extract(w_right);
 				word_t b_left = extract(w_left);
 				while (b_left != 0 && (b_right == 0 || b_left < b_right)) {
-					token t;
-					t.index = i;
-					t.word = b_left;
-					t.is_braces = b_left & bitmap.bm_lbrace[i];
-					stack.push_back(t);
-					stack_index++;
-					if (t.is_braces)
+
+					//push a new opening token on the stack
+					tokens[tokens_index].index = i;
+					tokens[tokens_index].word = b_left;
+					tokens[tokens_index].is_braces = b_left & bitmap.bm_lbrace[i];
+					if (tokens[tokens_index].is_braces)
 					{
 						braces_depth++;
 					}
@@ -203,22 +207,23 @@ namespace tftj
 					{
 						brackets_depth++;
 					}
+
+					tokens_index++;
 					w_left = remove(w_left);
 					b_left = extract(w_left);
 				}
 
 				if (b_right != 0)
 				{
-					if (stack_index == 0)
+					if (tokens_index == 0)
 					{
-						//closing braces with no opening braces: malformed json
+						//closing braces or brackets with no opening braces or bracket: malformed json
 						throw new int(0); //TODO better handling
 					}
 
-					auto t = stack.back();
-					stack.pop_back();
-					--stack_index;
-					if (t.is_braces)
+					auto t = tokens[tokens_index - 1];
+					--tokens_index;
+					if (t.is_braces) //TODO should check if the closing symbol matches the opening token
 					{
 						braces_depth--;
 					}
@@ -226,15 +231,16 @@ namespace tftj
 					{
 						brackets_depth--;
 					}
-					if (stack.empty())
-						return; //TODO: here we know if the type is array or json
+					if (tokens_index == 0)
+						return; //TODO: here we know if the type of the full json is array or json object
 
-					bool in_braces = stack.back().is_braces;
+					//outside of this block, are we inside braces or brackets?
+					bool in_braces = tokens[tokens_index - 1].is_braces;
 
 					if (in_braces)
 					{
 						int level = braces_depth - 1;
-						if (level > -1 && level < max_depth) {
+						if (level >= 0 && level < max_depth) {
 
 							int index_left = t.index; //word index of matching left brace
 							b_left = t.word; //bit index of matching left brace
@@ -253,7 +259,7 @@ namespace tftj
 					else
 					{
 						int level = brackets_depth - 1;
-						if (level > -1 && level < max_array_depth) {
+						if (level >= 0 && level < max_array_depth) {
 
 							int index_left = t.index; //word index of matching left brace
 							b_left = t.word; //bit index of matching left brace

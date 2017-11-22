@@ -22,7 +22,7 @@ namespace tftj
 
 		int memory_bytes = 
 			sizeof(word_t) * n * (8 + max_depth) + (need_array ? sizeof(word_t) * n * (1 + max_array_depth) : 0) +
-			sizeof(std::pair<int, word_t >) * sizeof(word_t) * n;
+			sizeof(token) * sizeof(word_t) * n;
 
 		LinearAllocator alloc(memory_bytes);
 

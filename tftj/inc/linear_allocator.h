@@ -78,4 +78,30 @@ public:
 	LinearAllocator& operator=(const LinearAllocator&&) = delete;
 };
 
+template<class T>
+struct ScopedAllocated
+{
+	LinearAllocator& alloc;
+	const int size;
+
+	T* allocated;
+
+	ScopedAllocated<T>(LinearAllocator& alloc, int size):
+		alloc(alloc),
+		size(size)
+	{
+		allocated = alloc.allocate<T>(size);
+	}
+
+	~ScopedAllocated()
+	{
+		alloc.deallocate<T>(size);
+	}
+
+	ScopedAllocated(const ScopedAllocated<T>&) = delete;
+	ScopedAllocated(const ScopedAllocated<T>&&) = delete;
+	ScopedAllocated& operator=(const ScopedAllocated<T>&) = delete;
+	ScopedAllocated& operator=(const ScopedAllocated<T>&&) = delete;
+};
+
 #endif
