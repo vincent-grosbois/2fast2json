@@ -33,7 +33,8 @@ namespace tftj
 				b_cumulative = extract(cumulative);
 			}
 
-			if (b_cumulative != 0) {
+			if (b_cumulative != 0)
+			{
 				l_brackets_found = b_cumulative &  data.bm_lbracket[w];
 				break;
 			}
@@ -121,17 +122,15 @@ namespace tftj
 			const Query::map_t* inner_tree = nullptr;
 			bool has_field = do_query(query, key, &inner_tree);
 
-			//std::cout << "field:\t" <<  field << " : " << has_field << '\n';
-
 			if (has_field)
 			{
-				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1) ? true : false);
+				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1));
 
-				if (inner_tree->isQueried) {
-					//std::string field = data.str.substr(value_indices.first, value_indices.second - value_indices.first + 1);
-					//std::cout << "key: " << inner_tree->node << "  : \n" << field << "\n\n";
+				if (inner_tree->isQueried)
+				{
 					out.received(inner_tree->queryIndex, value_indices.first, value_indices.second);
 				}
+
 				if (!inner_tree->tree.empty())
 				{
 					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data, out);
