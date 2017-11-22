@@ -66,42 +66,37 @@ namespace tftj
 	//it might be necessary to go back several words before to find where the preceding backslashes end
 	void check_for_escaped_quotes(int n, const word_t* bm_backslash, word_t* bm_quote)
 	{
-		//check for \" pattern
-		std::vector<word_t> bm_backslash_quote = std::vector<word_t>(n);
-		for (int i = 0; i < n - 1; ++i)
-		{
-			bm_backslash_quote[i] = ((bm_quote[i] >> 1) + (bm_quote[i + 1] << (word_bits - 1))) & bm_backslash[i];
-		}
-		bm_backslash_quote[n - 1] = (bm_quote[n - 1] >> 1) & bm_backslash[n - 1];
-
-		std::vector<word_t> bm_unstructured_quote = std::vector<word_t>(n);
+		word_t bm_unstructured_quote_from_last_word = 0;
 
 		//handle multiple "\" characters consecutively: only an odd number of backslashes before a quote is an escaped quote
 		for (int i = 0; i < n; ++i)
 		{
 			word_t unstructured_quote = 0;
-			word_t backslash_quote = bm_backslash_quote[i];
+
+			//check for \" pattern of this word
+			word_t next_word_first_quote = (i < n - 1) ? (bm_quote[i + 1] << (word_bits - 1)) : 0;
+			word_t backslash_quote = ((bm_quote[i] >> 1) + next_word_first_quote) & bm_backslash[i];
 
 			while (backslash_quote != 0)
 			{
+				//we have a \" pattern: now try to find how far back the \ sequence goes
+
 				int conseq_backslash_num = 0;
-				for (int j = i; j >= 0; --j)
+
+				word_t backslash_mask = bm_backslash[i];
+
+				word_t blackslash_quote_s = smear(backslash_quote);
+				int cnt = popcount(blackslash_quote_s);
+				word_t backslash_b_mask = (backslash_mask & blackslash_quote_s) << (word_bits - cnt);
+				int leading_ones_num = leading_zeros(~backslash_b_mask);
+				conseq_backslash_num += leading_ones_num;
+
+				//the \ sequences goes all the way to the begining of the word: check in previous words as well
+				if (leading_ones_num == cnt)
 				{
-					word_t backslash_mask = bm_backslash[j];
-					if (j == i)
+					for (int j = i - 1; j >= 0; --j)
 					{
-						word_t blackslash_quote_s = smear(backslash_quote);
-						int cnt = popcount(blackslash_quote_s);
-						word_t backslash_b_mask = (backslash_mask & blackslash_quote_s) << (word_bits - cnt);
-						int leading_ones_num = leading_zeros(~backslash_b_mask);
-						conseq_backslash_num += leading_ones_num;
-						if (leading_ones_num != cnt)
-						{
-							break;
-						}
-					}
-					else
-					{
+						backslash_mask = bm_backslash[j];
 						int leading_ones = leading_zeros(~backslash_mask);
 						conseq_backslash_num += leading_ones;
 						if (leading_ones != word_bits)
@@ -109,24 +104,20 @@ namespace tftj
 							break;
 						}
 					}
-
 				}
+
+				//only flag the quote if there is an odd number of backslashes
 				if ((conseq_backslash_num & 1) == 1)
 				{
 					unstructured_quote |= extract(backslash_quote);
 				}
 
 				backslash_quote = remove(backslash_quote);
-
 			}
-			bm_unstructured_quote[i] = unstructured_quote;
-		}
 
-		//TODO this loop can be integrated in the previous one
-		bm_quote[0] &= ~(bm_unstructured_quote[0] << 1);
-		for (int i = 1; i < n; ++i)
-		{
-			bm_quote[i] &= ~((bm_unstructured_quote[i] << 1) | (bm_unstructured_quote[i - 1] >> (word_bits - 1)));
+			bm_quote[i] &= ~((unstructured_quote << 1) | bm_unstructured_quote_from_last_word);
+
+			bm_unstructured_quote_from_last_word = unstructured_quote >> (word_bits - 1);
 		}
 
 	}
