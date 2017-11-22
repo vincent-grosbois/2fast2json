@@ -14,89 +14,102 @@ bool operator==(const std::pair<std::vector<int>, QueryNode*>& v1, const std::ve
 
 struct QueryNode
 {
-	std::string node;
-	bool isQueried;
-	int queryIndex;
+	//full name of this node (starting from root)
+	//used for debug only
+	std::string name;
 
-	std::unordered_map<std::string, QueryNode*> tree;
-	std::unordered_map<int, QueryNode*> arrays;
+	//did we ask for this specific node? (otherwise it means we asked for children/siblings)
+	bool is_queried;
 
-	QueryNode(const std::string& name)
-		: node(name)
+	//index of this specific field in the initial query
+	int query_index;
+
+	//children nodes, ie if this is 'node1' we go to 'node1.a', 'node1.b' etc
+	std::unordered_map<std::string, QueryNode*> children_nodes;
+
+	//sibling nodes, ie if this is 'node1' we go to 'node1[1]', 'node1[4]' etc
+	std::unordered_map<int, QueryNode*> sibling_nodes;
+
+
+
+	QueryNode(const std::string& node_name):
+		name(node_name),
+		is_queried(false),
+		query_index(-1)
+	{ }
+
+	//move ctor: move all containers to new instance
+	QueryNode(QueryNode&& ref) :
+		name(ref.name),
+		is_queried(ref.is_queried),
+		query_index(ref.query_index),
+		children_nodes(std::move(ref.children_nodes)),
+		sibling_nodes(std::move(ref.sibling_nodes))
 	{
-		isQueried = false;
+		ref.children_nodes.clear();
+		ref.sibling_nodes.clear();
 	}
 
 	void addQueried(int index)
 	{
-		isQueried = true;
-		queryIndex = index;
+		is_queried = true;
+		query_index = index;
 	}
 
-	QueryNode* getArrayQueried(const std::vector<int>& indices)
+	//get, or create and get, the sibling of this node at a given multi-index
+	QueryNode* getSibling(const std::vector<int>& multi_index)
 	{
-		if (!tree.empty())
+		if (!children_nodes.empty())
 		{
-			return nullptr; //todo: error code
+			//a node can't have both children and siblings
+			return nullptr;
 		}
 
 		QueryNode* root = this;
-		for (int i : indices)
+		std::string index_suffix = "";
+		for (int i : multi_index)
 		{
-			if (root->arrays.find(i) == root->arrays.end())
+			index_suffix += "[" + std::to_string(i) + "]";
+			if (root->sibling_nodes.find(i) == root->sibling_nodes.end())
 			{
-				std::string name;
-				for (auto& i : indices)
-				{
-					name += "[" + std::to_string(i) + "]";
-				}
-				root->arrays[i] = new QueryNode(node.empty() ? name : node + "." + name);
+				root->sibling_nodes[i] = new QueryNode(name + index_suffix);
 			}
-			root = root->arrays[i];
+			root = root->sibling_nodes[i];
 		}
 		return root;
 	}
 
-	QueryNode* getJsonQueried(const std::string& str)
+	QueryNode* getChildQueried(const std::string& str)
 	{
 		if (str == "")
 		{
 			return this;
 		}
 
-		if (!arrays.empty())
+		if (!sibling_nodes.empty())
 		{
+			//a node can't have both children and siblings
 			return nullptr;
 		}
 
-		if (tree[str] == nullptr)
+		if (children_nodes[str] == nullptr)
 		{
-			tree[str] = new QueryNode(node.empty() ? str : node + "." + str);
+			children_nodes[str] = new QueryNode(name.empty() ? str : name + "." + str);
 		}
-		return tree[str];
+		return children_nodes[str];
 	}
 
 	~QueryNode()
 	{
-		for (auto& l : tree)
+		for (auto& n : children_nodes)
 		{
-			delete l.second;
+			delete n.second;
 		}
-	}
 
-	QueryNode()
-	{
-		isQueried = false;
-	}
-
-	QueryNode(QueryNode&& ref):
-		isQueried(ref.isQueried),
-		node(ref.node),
-		tree(ref.tree),
-		arrays(ref.arrays)
-	{
-		ref.tree.clear();
-		ref.arrays.clear();
+		for (auto& n : sibling_nodes)
+		{
+			delete n.second;
+		}
 	}
 
 	QueryNode(const QueryNode&) = delete;
@@ -105,104 +118,107 @@ struct QueryNode
 };
 
 
-QueryNode parse_query(const std::vector<std::string>& query, int* depth, int* array_depth);
+QueryNode parse_query(const std::vector<std::string>& query, int& children_depth, int& siblings_depth);
 
 struct Query
 {
-	typedef QueryNode map_t;
-
-	map_t _tree;
-	int _depth;
-	int _array_depth;
+	QueryNode tree;
+	int children_depth;
+	int siblings_depth;
 
 	Query(const std::vector<std::string>& query):
-		_tree(parse_query(query, &_depth, &_array_depth))
+		tree(parse_query(query, children_depth, siblings_depth))
 	{	}
 
 
-private:
 	Query(const Query&) = delete;
 	Query(const Query&&) = delete;
 	Query& operator=(const Query&) = delete;
 	Query& operator=(const Query&&) = delete;
 };
 
-bool do_query(const Query::map_t& tree, const std::string& field, const Query::map_t** inner_tree)
+void parse_query_internal(const std::string& str, QueryNode& root, int& children_depth, int& siblings_depth, int index);
+
+QueryNode parse_query(const std::vector<std::string>& query, int& max_children_depth, int& max_siblings_depth)
 {
-	auto it = tree.tree.find(field);
-	if(it == tree.tree.end())
-	{
-		return false;
-	}
+	QueryNode root("");
 
-	*inner_tree = it->second;
-	return true;
-};
+	max_children_depth = 0;
+	max_siblings_depth = 0;
 
-void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth, int index);
-
-QueryNode parse_query(const std::vector<std::string>& query, int* depth, int* array_depth)
-{
-	QueryNode root;
-
-	int max_depth = 0;
-	int max_array_depth = 0;
 	int index = 0;
-	for(auto q : query)
+	for(auto& q : query)
 	{
-		int depth = 0;
-		int array_depth = 0;
-		parseQuery2(q, root, depth, array_depth, index);
-		if (depth > max_depth)
-			max_depth = depth;
-		if (array_depth > max_array_depth)
-			max_array_depth = array_depth;
+		int children_depth = 0;
+		int siblings_depth = 0;
+		parse_query_internal(q, root, children_depth, siblings_depth, index);
+
+		if (children_depth > max_children_depth)
+			max_children_depth = children_depth;
+
+		if (siblings_depth > max_siblings_depth)
+			max_siblings_depth = siblings_depth;
+
 		++index;
 	}
-	*depth = max_depth; 
-	*array_depth = max_array_depth;
+
 	return root;
 }
 
-void parseQuery2(const std::string& str, QueryNode& root, int& depth, int& array_depth, int index)
+void parse_query_internal(const std::string& query, QueryNode& root, int& depth, int& array_depth, int index)
 {
-	if (str == "")
+	if (query == "")
 		return;
 
 	++depth;
 
-	size_t dot_pos = str.find('.');
-	std::string start = str.substr(0, dot_pos);
+	//here, query is for instance "a[2][3].b.c"
 
-	size_t l_bracket_pos = start.find('[');
-	std::string start_no_index = start.substr(0, l_bracket_pos);
+	size_t dot_pos = query.find('.');
+	std::string query_before_dot = query.substr(0, dot_pos);
 
-	QueryNode* node = root.getJsonQueried(start_no_index);
+	//query_before_dot is "a[2][3]"
 
-	std::vector<int> indices;
+	size_t l_bracket_pos = query_before_dot.find('[');
+	std::string query_before_brackets = query_before_dot.substr(0, l_bracket_pos);
 
+	//query_before_brackets is "a"
+
+	//query this node from the root if it exists:
+	QueryNode* node = root.getChildQueried(query_before_brackets);
+
+	//iterate over the remaining "[2][3]" string to get the multi-index queried:
+
+	std::vector<int> array_multi_index;
 	while (l_bracket_pos != std::string::npos)
 	{
-		std::string next = start.substr(l_bracket_pos + 1);
+		std::string next = query_before_dot.substr(l_bracket_pos + 1);
 		size_t r_bracket_pos = next.find(']');
 		std::string index = next.substr(0, r_bracket_pos);
-		indices.push_back(std::stoi(index));
-		start = next.substr(r_bracket_pos + 1);
-		l_bracket_pos = start.find('[');
+		array_multi_index.push_back(std::stoi(index));
+		query_before_dot = next.substr(r_bracket_pos + 1);
+		l_bracket_pos = query_before_dot.find('[');
 		++array_depth;
 	}
 
-	QueryNode* array_node = indices.empty() ? node : node->getArrayQueried(indices);
+	if (!array_multi_index.empty())
+	{
+		node = node->getSibling(array_multi_index);
+	}
 
 	if (dot_pos == std::string::npos)
 	{
-		array_node->addQueried(index);
+		//if no deeper node is queried, it means we are interested in this node: flag it
+		node->addQueried(index);
 		return;
 	}
 
-	std::string next = str.substr(dot_pos + 1);
+	std::string query_after_dot = query.substr(dot_pos + 1);
 
-	parseQuery2(next, *array_node, depth, array_depth, index);
+	//query_after_dot is "b.c"
+
+	//recurse with "b.c", but the corresponding root node is now located at "a[2][3]"
+	parse_query_internal(query_after_dot, *node, depth, array_depth, index);
 }
 
 #endif

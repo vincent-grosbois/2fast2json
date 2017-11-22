@@ -11,36 +11,31 @@
 
 namespace tftj
 {
-	void parse(const std::string& s, const Query& query, OutputReader& outputReader, bool useAvx2)
+	void parse(const std::string& json, const Query& query, OutputReader& outputReader, bool useAvx2)
 	{
-		const int max_depth = query._depth;
-		const int max_array_depth = query._array_depth;
-		const bool needArray = max_array_depth > 0;
-		const int n = (static_cast<int>(s.size()) + word_bits - 1) / word_bits;
+		const int max_depth = query.children_depth;
+		const int max_array_depth = query.siblings_depth;
+		const bool need_array = max_array_depth > 0;
+
+		const int string_size = static_cast<int>(json.size());
+		const int n = (string_size + word_bits - 1) / word_bits;
 
 		int memory_bytes = 
-			sizeof(word_t) * n * (8 + max_depth) + (needArray ? sizeof(word_t) * n * (1 + max_array_depth) : 0) +
+			sizeof(word_t) * n * (8 + max_depth) + (need_array ? sizeof(word_t) * n * (1 + max_array_depth) : 0) +
 			sizeof(std::pair<int, word_t >) * sizeof(word_t) * n;
 
 		LinearAllocator alloc(memory_bytes);
 
-		//LinearAllocator alloc2(memory_bytes);
-
-		//step 1:
-		//Character_Bitmap char_bitmap0(alloc, n, max_depth, max_array_depth);
-		//create_bitmap(char_bitmap, s);
-
-		Character_Bitmap char_bitmap(alloc, n, max_depth, max_array_depth, s);
+		//step 1: create bitmap array
+		Character_Bitmap char_bitmap(alloc, n, max_depth, max_array_depth, json);
 		if (useAvx2)
 		{
-			create_bitmap_avx2(char_bitmap, s);
+			create_bitmap_avx2(char_bitmap, json);
 		}
 		else
 		{
-			create_bitmap(char_bitmap, s);
+			create_bitmap(char_bitmap, json);
 		}
-
-		//int diff = memcmp(alloc.start_memory, alloc2.start_memory, memory_bytes);
 
 		//step 2: build structural quotes bitmap
 		check_for_escaped_quotes(n, char_bitmap.bm_backslash, char_bitmap.bm_quote);
@@ -55,7 +50,7 @@ namespace tftj
 		remove_string_items(n, char_bitmap.bm_lbracket, char_bitmap.bm_string);
 		remove_string_items(n, char_bitmap.bm_rbracket, char_bitmap.bm_string);
 
-		if (needArray)
+		if (need_array)
 		{
 			//step 4 for arrays
 			remove_string_items(n, char_bitmap.bm_comma, char_bitmap.bm_string);
@@ -63,13 +58,13 @@ namespace tftj
 
 		build_colon_and_comma_level_bm(n, max_depth, max_array_depth, alloc, char_bitmap);
 
-		if (!query._tree.tree.empty())
+		if (!query.tree.children_nodes.empty())
 		{
-			basic_parse_json(0, static_cast<int>(s.size()) - 1, 0, 0, query._tree, char_bitmap, outputReader);
+			basic_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader);
 		}
-		else if(!query._tree.arrays.empty())
+		else if(!query.tree.sibling_nodes.empty())
 		{
-			basic_parse_array(0, static_cast<int>(s.size()) - 1, 0, 0, query._tree, char_bitmap, outputReader);
+			basic_parse_array(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader);
 		}
 	}
 
