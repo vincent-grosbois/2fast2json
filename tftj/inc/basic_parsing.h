@@ -5,6 +5,7 @@
 #include "query.h"
 #include "indexing.h"
 #include "output_reader.h"
+
 namespace tftj
 {
 	void basic_parse_json(int start, int end, int depth, int array_depth, const QueryNode& query, const CharacterBitmap& data, OutputReader& out);

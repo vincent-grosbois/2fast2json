@@ -67,7 +67,6 @@ namespace tftj {
 		{
 			if (!children_nodes.empty())
 			{
-				//a node can't have both children and siblings
 				throw QueryException("Trying to add a sub-array for node " + name + " which already contains children");
 			}
 
@@ -85,24 +84,24 @@ namespace tftj {
 			return root;
 		}
 
-		QueryNode* getChildQueried(const std::string& str)
+		//get, or create and get, the children of this node at a given sub-level
+		QueryNode* getChildQueried(const std::string& childName)
 		{
-			if (str == "")
+			if (childName == "")
 			{
 				return this;
 			}
 
 			if (!sibling_nodes.empty())
 			{
-				//a node can't have both children and siblings
 				throw QueryException("Trying to add children for node " + name + " which already contains a sub-array");
 			}
 
-			if (children_nodes[str] == nullptr)
+			if (children_nodes[childName] == nullptr)
 			{
-				children_nodes[str] = new QueryNode(name.empty() ? str : name + "." + str);
+				children_nodes[childName] = new QueryNode(name.empty() ? childName : name + "." + childName);
 			}
-			return children_nodes[str];
+			return children_nodes[childName];
 		}
 
 		~QueryNode()
