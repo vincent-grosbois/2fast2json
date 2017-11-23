@@ -286,52 +286,34 @@ namespace tftj
 		}
 	}
 
-
-	std::vector<int> generate_comma_position(int start, int end, const word_t* bm_comma)
+	//TODO check if end is included
+	std::vector<int> generate_items_position(int start, int end, const word_t* bm_item)
 	{
 		std::vector<int> res;
 		for (int i = start / word_bits; i < (end + word_bits - 1) / word_bits; ++i)
 		{
-			word_t b_cols = bm_comma[i];
-			while (b_cols != 0)
+			word_t b_items = bm_item[i];
+			while (b_items != 0)
 			{
-				word_t b_col = extract(b_cols);
-				int offset = word_bits*i + popcount(b_col - 1);
+				word_t b_item = extract(b_items);
+				int offset = word_bits*i + popcount(b_item - 1);
 				if (offset >= start && offset <= end)
 				{
 					res.push_back(offset);
 				}
-				b_cols = remove(b_cols);
+				b_items = remove(b_items);
 			}
 
 		}
 		return res;
 	}
 
-	std::vector<int> generate_colon_position(int start, int end, const word_t* bm_col)
-	{
-		std::vector<int> res;
-		for (int i = start / word_bits; i < (end + word_bits - 1) / word_bits; ++i)
-		{
-			word_t b_cols = bm_col[i];
-			while (b_cols != 0)
-			{
-				word_t b_col = extract(b_cols);
-				int offset = word_bits*i + popcount(b_col - 1);
-				if (offset >= start && offset <= end)
-				{
-					res.push_back(offset);
-				}
-				b_cols = remove(b_cols);
-			}
 
-		}
-		return res;
-	}
-
-	bool search_pre_field_indices(const word_t* b_quote, int start, int end, std::pair<int, int>* pair) {
-		int si = 0;
-		int ei = 0;
+	//between start and end, we look for the last pair of quotes
+	//we start with the last words and go backwards, however this gets complex since each word is iterated forward
+	bool search_pre_field_indices(const word_t* b_quote, int start, int end, std::pair<int, int>& pair) {
+		int start_quote_index = 0;
+		int end_quote_index = 0;
 		bool ei_set = false;
 		int n_quote = 0;
 		for (int i = (end + word_bits - 1) / word_bits - 1; i >= start / word_bits; --i) {
@@ -344,18 +326,18 @@ namespace tftj
 				}
 				if (start < offset) {
 					if (ei_set) {
-						si = offset;
+						start_quote_index = offset;
 					}
 					else {
-						si = ei;
-						ei = offset;
+						start_quote_index = end_quote_index;
+						end_quote_index = offset;
 					}
 					++n_quote;
 				}
 				m_quote = remove(m_quote);
 			}
 			if (n_quote >= 2) {
-				*pair = std::make_pair(si, ei);
+				pair = std::make_pair(start_quote_index, end_quote_index);
 				return true;
 			}
 			if (n_quote == 1) {
@@ -365,6 +347,8 @@ namespace tftj
 		return false;
 	}
 
+	//look for the value between si and ei
+	//we remove all whitespaces character and also the last closing character (either ] } or , )
 	std::pair<int, int> search_post_value_indices(const std::string& rec, int si, int ei, bool ignore_once_char_braces_or_bracket) {
 		bool ignore_once_char_ignored = false;
 		int n = static_cast<int>(rec.length());
@@ -381,7 +365,8 @@ namespace tftj
 		}
 
 		if (si == n) {
-			//return Err(Error::from(ErrorKind::InvalidRecord));
+			//TODO better error handling
+			throw new int(0);
 		}
 		while (si <= ei) {
 			if (rec[ei] == ' ' ||
@@ -407,7 +392,8 @@ namespace tftj
 		}
 
 		if (ei < si) {
-			//return Err(Error::from(ErrorKind::InvalidRecord));
+			//TODO better error handling
+			throw new int(0);
 		}
 		return std::make_pair(si, ei);
 	}
