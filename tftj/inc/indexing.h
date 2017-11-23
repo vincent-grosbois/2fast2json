@@ -60,6 +60,8 @@ namespace tftj
 		CharacterBitmap(const CharacterBitmap&&) = delete;
 		CharacterBitmap& operator=(const CharacterBitmap&) = delete;
 		CharacterBitmap& operator=(const CharacterBitmap&&) = delete;
+
+		//TODO deallocate on delete!!
 	};
 
 	//remove from bm_quote the quotes that are escaped, ie the quotes that are preceded by an *odd* number of backslashes
