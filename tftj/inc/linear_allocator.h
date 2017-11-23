@@ -44,14 +44,15 @@ public:
 		}
 		else
 		{
+			//TODO throw
 			return nullptr;
 		}
 	}
 
 	template<class T>
-	T* allocate(int size)
+	T* allocate(int count)
 	{
-		return reinterpret_cast<T*>(allocate_raw(sizeof(T)*size));
+		return reinterpret_cast<T*>(allocate_raw(sizeof(T)*count));
 	}
 
 	void deallocate_raw(int nBytes)
@@ -61,9 +62,9 @@ public:
 	}
 
 	template<class T>
-	void deallocate(int size)
+	void deallocate(int count)
 	{
-		deallocate_raw(sizeof(T)*size);
+		deallocate_raw(sizeof(T)*count);
 	}
 
 	~LinearAllocator()
