@@ -339,7 +339,7 @@ namespace tftj
 
 	void create_bitmap_avx2_32bits(CharacterBitmap& bitmap, const std::string& s)
 	{
-		if (bitmap.max_array_depth > 0)
+		if (bitmap.max_siblings_depth > 0)
 		{
 			create_bitmap_avx2_32bits_base<true>(bitmap, s);
 		}

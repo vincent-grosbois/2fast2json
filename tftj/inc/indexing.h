@@ -346,7 +346,7 @@ namespace tftj
 				ei_set = true;
 			}
 		}
-		return false;
+		return false; //todo should throw here
 	}
 
 	//look for the value between si and ei

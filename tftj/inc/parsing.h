@@ -60,7 +60,14 @@ namespace tftj
 
 		if (!query.tree.children_nodes.empty())
 		{
-			basic_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader, useSpeculativeParsing);
+			if (useSpeculativeParsing)
+			{
+				speculative_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader);
+			}
+			else
+			{
+				basic_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader, false);
+			}
 		}
 		else if(!query.tree.sibling_nodes.empty())
 		{
@@ -83,7 +90,7 @@ namespace tftj
 		Parser& operator=(Parser&&) = delete;
 
 	public :
-		Parser(Query& query, OutputReader& outputReader, bool useAvx2, int num_training = 1000):
+		Parser(Query& query, OutputReader& outputReader, bool useAvx2, int num_training):
 			query(query),
 			outputReader(outputReader),
 			useAvx2(useAvx2),
