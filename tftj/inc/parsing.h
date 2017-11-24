@@ -11,7 +11,7 @@
 
 namespace tftj
 {
-	void parse(const std::string& json, const Query& query, OutputReader& outputReader, bool useAvx2)
+	void parse(const std::string& json, Query& query, OutputReader& outputReader, bool useAvx2, bool useSpeculativeParsing)
 	{
 		const int max_depth = query.children_depth;
 		const int max_array_depth = query.siblings_depth;
@@ -60,14 +60,50 @@ namespace tftj
 
 		if (!query.tree.children_nodes.empty())
 		{
-			basic_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader);
+			basic_parse_json(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader, useSpeculativeParsing);
 		}
 		else if(!query.tree.sibling_nodes.empty())
 		{
-			basic_parse_array(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader);
+			basic_parse_array(0, string_size - 1, 0, 0, query.tree, char_bitmap, outputReader, useSpeculativeParsing);
 		}
 	}
 
+	class Parser
+	{
+		Query& query;
+		OutputReader& outputReader;
+		const bool useAvx2;
+		const int num_training;
+		int num_parsed;
+		bool use_speculative_parsing;
+
+		Parser(Parser&) = delete;
+		Parser(Parser&&) = delete;
+		Parser& operator=(Parser&) = delete;
+		Parser& operator=(Parser&&) = delete;
+
+	public :
+		Parser(Query& query, OutputReader& outputReader, bool useAvx2, int num_training = 1000):
+			query(query),
+			outputReader(outputReader),
+			useAvx2(useAvx2),
+			num_training(num_training),
+			num_parsed(0),
+			use_speculative_parsing(false)
+		{ }
+
+		void parse(const std::string& json)
+		{
+			tftj::parse(json, query, outputReader, useAvx2, use_speculative_parsing);
+			++num_parsed;
+			if (!use_speculative_parsing && num_training > 0 && num_parsed >= num_training)
+			{
+				query.tree.CleanSpeculativeTree();
+				use_speculative_parsing = true;
+			}
+		}
+
+	};
 
 }
 

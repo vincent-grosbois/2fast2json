@@ -3,8 +3,90 @@
 
 #include <unordered_map>
 #include <string>
+#include <algorithm>
 
 namespace tftj {
+
+
+	struct SpeculativeParsingNode
+	{
+		const std::string name;
+		int index;
+		int count;
+		std::vector<SpeculativeParsingNode*> children;
+
+		SpeculativeParsingNode():
+			name("root"), //root node
+			index(-1),
+			count(0)
+		{ }
+
+		SpeculativeParsingNode(const std::string& name, int index) :
+			name(name),
+			index(index),
+			count(1)
+		{ }
+
+		~SpeculativeParsingNode()
+		{
+			for (auto& p : children)
+			{
+				delete p;
+			}
+		}
+
+		//sort by descending counts and keep at most max_children
+		void Clean(int max_children)
+		{
+			struct by_reverse_count {
+				bool operator()(SpeculativeParsingNode* const &a, SpeculativeParsingNode* const &b) {
+					return a->count > b->count;
+				}
+			};
+
+			std::sort(children.begin(), children.end(), by_reverse_count());
+
+			if (max_children < children.size())
+			{
+				for (int i = max_children; i < children.size(); ++i)
+				{
+					delete children[i];
+				}
+				children.resize(max_children);
+			}
+		}
+
+		//TODO refactor without recursion
+		void insert(const std::pair<std::string, int>* list, int size)
+		{
+			if (size == 0)
+			{
+				return;
+			}
+
+			auto& e = list[0];
+
+			SpeculativeParsingNode* child = nullptr;
+			for (auto& i : children)
+			{
+				if (i->name == e.first && i->index == e.second)
+				{
+					++(i->count);
+					child = i;
+					break;
+				}
+			}
+
+			if (child == nullptr)
+			{
+				child = new SpeculativeParsingNode(e.first, e.second);
+				children.push_back(child);
+			}
+
+
+			child->insert(list + 1, size - 1);
+		}
+	};
 
 	struct QueryException
 	{
@@ -16,7 +98,7 @@ namespace tftj {
 	{
 		//full name of this node (starting from root)
 		//used for debug only
-		std::string name;
+		const std::string name;
 
 		//did we ask for this specific node? (otherwise it means we asked for children/siblings)
 		bool is_queried;
@@ -30,6 +112,7 @@ namespace tftj {
 		//sibling nodes, ie if this is 'node1' we go to 'node1[1]', 'node1[4]' etc
 		std::unordered_map<int, QueryNode*> sibling_nodes;
 
+		SpeculativeParsingNode speculative_tree;
 
 
 		QueryNode(const std::string& node_name) :
@@ -101,6 +184,21 @@ namespace tftj {
 				children_nodes[childName] = new QueryNode(name.empty() ? childName : name + "." + childName);
 			}
 			return children_nodes[childName];
+		}
+
+		void CleanSpeculativeTree()
+		{
+			speculative_tree.Clean(5);
+
+			for (auto& n : children_nodes)
+			{
+				n.second->CleanSpeculativeTree();
+			}
+
+			for (auto& n : sibling_nodes)
+			{
+				n.second->CleanSpeculativeTree();
+			}
 		}
 
 		~QueryNode()

@@ -5,12 +5,13 @@
 #include "query.h"
 #include "indexing.h"
 #include "output_reader.h"
+#include <unordered_set>
 
 namespace tftj
 {
-	void basic_parse_json(int start, int end, int depth, int array_depth, const QueryNode& query, const CharacterBitmap& data, OutputReader& out);
+	void basic_parse_json(int start, int end, int depth, int array_depth, QueryNode& query, const CharacterBitmap& data, OutputReader& out, bool useSpeculativeParsing);
 
-	void basic_parse_array(int start_, int end_, int depth, int array_depth, const QueryNode& query, const CharacterBitmap& data, OutputReader& out)
+	void basic_parse_array(int start_, int end_, int depth, int array_depth, QueryNode& query, const CharacterBitmap& data, OutputReader& out, bool useSpeculativeParsing)
 	{
 		//check if the next opening symbol is a [
 
@@ -65,16 +66,16 @@ namespace tftj
 			}
 			if (!p.second->children_nodes.empty())
 			{
-				basic_parse_json(start, end, depth + 1, array_depth, *p.second, data, out);
+				basic_parse_json(start, end, depth + 1, array_depth, *p.second, data, out, useSpeculativeParsing);
 			}
 			else if (!p.second->sibling_nodes.empty())
 			{
-				basic_parse_array(start, end, depth, array_depth + 1, *p.second, data, out);
+				basic_parse_array(start, end, depth, array_depth + 1, *p.second, data, out, useSpeculativeParsing);
 			}
 		}
 	}
 
-	void basic_parse_json(int start, int end, int depth, int array_depth, const QueryNode& query, const CharacterBitmap& data, OutputReader& out)
+	void basic_parse_json(int start, int end, int depth, int array_depth, QueryNode& query, const CharacterBitmap& data, OutputReader& out, bool useSpeculativeParsing)
 	{
 		//check if the next opening symbol is a {
 
@@ -112,6 +113,10 @@ namespace tftj
 
 		int value_end_i = end;
 
+		std::vector<std::pair<std::string, int>> list; //todo pre-alloc on nb of queried fields
+		std::unordered_set<std::string> nodes_found;
+		std::vector<std::pair<std::string, int>> list_nodes;
+
 		for (int i = static_cast<int>(pos.size()) - 1; i >= 0; --i)
 		{
 			//look for the last quoted word between pos[i-1] and pos[i]: this is the key at this position
@@ -124,28 +129,57 @@ namespace tftj
 			auto it = query.children_nodes.find(key);
 			if (it != query.children_nodes.end())
 			{
-				const QueryNode* inner_tree = it->second;
+				QueryNode* inner_tree = it->second;
 
 				//check for the value after the current : and before the start of the next key
 				std::pair<int, int> value_indices = search_post_value_indices(data.str, pos[i] + 1, value_end_i, i == (pos.size() - 1));
 
-				if (inner_tree->is_queried)
+				if (inner_tree->is_queried) //todo handle the case where the key already appeared
 				{
 					out.received(inner_tree->query_index, value_indices.first, value_indices.second);
 				}
 
 				if (!inner_tree->children_nodes.empty())
 				{
-					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data, out);
+					basic_parse_json(value_indices.first, value_indices.second, depth + 1, array_depth, *inner_tree, data, out, useSpeculativeParsing);
 				}
 				else if (!inner_tree->sibling_nodes.empty())
 				{
-					basic_parse_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data, out);
+					basic_parse_array(value_indices.first, value_indices.second, depth, array_depth, *inner_tree, data, out, useSpeculativeParsing);
+				}
+
+				if (!useSpeculativeParsing)
+				{
+					list.push_back(std::make_pair(key, i));
+					nodes_found.emplace(key);
 				}
 			}
 
 			value_end_i = key_location.first - 1;
 
+		}
+
+		if (!useSpeculativeParsing)
+		{
+			for (auto& v : query.children_nodes)
+			{
+				if (nodes_found.find(v.first) == nodes_found.end())
+				{
+					list_nodes.push_back(std::make_pair(v.first, -1));
+				}
+			}
+			for (auto& v : list)
+			{
+				list_nodes.push_back(v);
+			}
+
+			//should be an assert:
+			if (list_nodes.size() != query.children_nodes.size())
+			{
+				throw 1;
+			}
+
+			query.speculative_tree.insert(list_nodes.data(), list_nodes.size());
 		}
 
 	}
